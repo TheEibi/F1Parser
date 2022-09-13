@@ -165,7 +165,7 @@ public class F1Parser extends Thread {
 
 		frame.setVisible(true);
 
-		vehicleTrackWarnings = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		vehicleTrackWarnings = new int[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		updateWarnings((short) 0, 0);
 		updateWarnings((short) 0, 1);
 		updateWarnings((short) 0, 2);
