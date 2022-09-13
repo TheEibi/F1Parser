@@ -5,8 +5,10 @@ package formula;
 
 import java.awt.Color;
 import java.awt.FlowLayout;
+import java.awt.Window;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -99,6 +101,8 @@ public class F1Parser extends Thread {
 	ObjectOutputStream oos = null;
 
 	private JButton changeSelf = new JButton("..");
+
+	private JButton close = new JButton("x");
 	private long curSessionUUID;
 
 	public void setWriteFile(boolean argWriteFile) {
@@ -132,6 +136,9 @@ public class F1Parser extends Thread {
 		socket = new DatagramSocket(20777);
 
 		changeSelf.setEnabled(false);
+
+		frame.setUndecorated(true);
+
 		frame.setAlwaysOnTop(true);
 		frame.setLayout(new FlowLayout());
 		frame.setSize(1300, 75);
@@ -154,6 +161,8 @@ public class F1Parser extends Thread {
 		frame.add(tyreBehindLabel);
 		frame.add(vehicleTyreBehind);
 
+		frame.add(close);
+
 		frame.setVisible(true);
 
 		vehicleTrackWarnings = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -168,16 +177,15 @@ public class F1Parser extends Thread {
 				choices[i] = participants.getParticipantDataList().get(i).getNameAsString();
 			}
 
-			String input ="";
+			String input = "";
 			if (myVehicleIdx < 0) {
-				input= (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
+				input = (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
 						JOptionPane.QUESTION_MESSAGE, null, choices, choices[0]);
-			}
-			else {
-				input= (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
+			} else {
+				input = (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
 						JOptionPane.QUESTION_MESSAGE, null, choices, choices[myVehicleIdx]);
 			}
-		
+
 			System.out.println(input);
 
 			int i = 0;
@@ -194,9 +202,12 @@ public class F1Parser extends Thread {
 
 		});
 
-		frame.addWindowListener(new WindowListener() {
+		close.addActionListener(e -> {
+			WindowEvent windowClosing = new WindowEvent(frame, WindowEvent.WINDOW_CLOSING);
+			frame.dispatchEvent(windowClosing);
+		});
 
-			
+		frame.addWindowListener(new WindowListener() {
 
 			@Override
 			public void windowOpened(WindowEvent argE) {
@@ -234,9 +245,9 @@ public class F1Parser extends Thread {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				
+
 				running = false;
-				
+
 				System.exit(0);
 			}
 
@@ -312,22 +323,26 @@ public class F1Parser extends Thread {
 		oos.flush();
 	}
 
-	public void readSingleSerFile() throws IOException {
-		File f = new File("c:/tmp/test.ser");
+	public void readSingleSerFile() throws IOException, ClassNotFoundException {
+		File f = new File("c:/tmp/-7963470744936800331.ser");
 		FileInputStream fis = new FileInputStream(f);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 
 		Object obj;
-		System.out.println(f.length());
 
-		while ((obj = ois.read()) != null) {
-			System.out.println(ois.available());
-			if (obj instanceof PacketFinalClassification) {
-				System.out.println(obj.toString());
+		boolean read = true;
+
+		try (ois) {
+			while (read) {
+				obj = ois.readUnshared();
+				if (obj != null)
+					System.out.println(obj.toString());
+
 			}
+		} catch (EOFException e) {
+			read = false;
+			System.out.println("jetzt is aus");
 		}
-
-		ois.close();
 	}
 
 	private void parseData(byte[] data) throws IOException {
@@ -352,9 +367,9 @@ public class F1Parser extends Thread {
 		case 2:
 			// lap data
 			packet = new PacketLapData(ph, bb);
-			short pos =1;
+			short pos = 1;
 			if (myVehicleIdx > -1) {
-			 pos = ((PacketLapData) packet).getLapDataList().get(myVehicleIdx).getCarPosition();
+				pos = ((PacketLapData) packet).getLapDataList().get(myVehicleIdx).getCarPosition();
 			}
 			frontVehicleIdx = getVehicleIdxDriverInFront(pos, (PacketLapData) packet);
 			behindVehicleIdx = getVehicleIdxDriverBehind(pos, (PacketLapData) packet);
@@ -563,13 +578,13 @@ public class F1Parser extends Thread {
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
 		F1Parser f1 = new F1Parser();
 //		f1.readFile();
-//		f1.readSingleSerFile();
+		f1.readSingleSerFile();
 
-		f1.setWriteFile(true);
+//		f1.setWriteFile(true);
 
-		f1.start();
+//		f1.start();
 	}
 }
