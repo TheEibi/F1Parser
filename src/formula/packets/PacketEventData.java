@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  * @author reinh
  *
  */
-public class PacketEventData  implements Serializable {
+public class PacketEventData  implements Serializable, IF1Packet{
 
 	/**
 	 * 

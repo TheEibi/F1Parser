@@ -20,7 +20,7 @@ import formula.constants.TrackConstants;
  * @author reinh
  *
  */
-public class PacketSession implements Serializable {
+public class PacketSession implements Serializable, IF1Packet {
 
 	/**
 	 * 

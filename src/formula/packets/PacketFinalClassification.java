@@ -12,7 +12,7 @@ import java.util.List;
  * @author reinh
  *
  */
-public class PacketFinalClassification  implements Serializable {
+public class PacketFinalClassification  implements Serializable, IF1Packet {
 
 	/**
 	 * 

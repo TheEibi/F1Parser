@@ -79,11 +79,13 @@ public class F1DataHelper {
 
 	public static String getNameForIdx(short argVehicleIdx) {
 		return participants.getParticipantDataList().get(argVehicleIdx).getNameAsString();
-
 	}
 
 	public static boolean isPublicTelemetryForIdx(short argVehicleIdx) {
-		return participants.getParticipantDataList().get(argVehicleIdx).getYourTelemetry() == 1;
+		if (participants == null) {
+			return false;
+		}
+		return participants.getParticipantDataList().get(argVehicleIdx).getYourTelemetry() == 0;
 	}
 
 	public static void setParticipants(PacketParticipants argParticipants) {
@@ -152,8 +154,8 @@ public class F1DataHelper {
 		vehicleTrackWarnings[vehicleIdx] = 0;
 	}
 
-	public static void readSingleSerFile() throws IOException, ClassNotFoundException {
-		File f = new File("c:/tmp/-7963470744936800331.ser");
+	public static void readSingleSerFile(String argFileName) throws IOException, ClassNotFoundException {
+		File f = new File(argFileName);
 		FileInputStream fis = new FileInputStream(f);
 		ObjectInputStream ois = new ObjectInputStream(fis);
 

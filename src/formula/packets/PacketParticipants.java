@@ -12,18 +12,18 @@ import java.util.List;
  * @author reinh
  *
  */
-public class PacketParticipants implements Serializable {
+public class PacketParticipants implements Serializable, IF1Packet {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 3553355621990177829L;
-	private PacketHeader header;
+	private PacketHeader packetHeader;
 	private short numActiveCars;
 	private List<ParticipantData> participantDataList;
 
-	public PacketParticipants(PacketHeader argHeader, ByteBuffer argBb) {
-		header = argHeader;
+	public PacketParticipants(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		packetHeader = argPacketHeader;
 
 		numActiveCars = argBb.get();
 
@@ -35,8 +35,8 @@ public class PacketParticipants implements Serializable {
 
 	}
 
-	public PacketHeader getHeader() {
-		return header;
+	public PacketHeader getPacketHeader() {
+		return packetHeader;
 	}
 
 	public short getNumActiveCars() {
@@ -50,7 +50,7 @@ public class PacketParticipants implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(getHeader());
+		sb.append(getPacketHeader());
 		sb.append("::");
 		sb.append(getClass().getSimpleName());
 		sb.append("::");

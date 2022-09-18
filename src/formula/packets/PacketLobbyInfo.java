@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PacketLobbyInfo  implements Serializable {
+public class PacketLobbyInfo  implements Serializable , IF1Packet{
 
 	/**
 	 * 

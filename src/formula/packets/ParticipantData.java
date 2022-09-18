@@ -82,7 +82,11 @@ public class ParticipantData implements Serializable {
 	}
 
 	public String getNameAsString() {
-		return new String(getName(), StandardCharsets.UTF_8).trim();
+		String name = new String(getName(), StandardCharsets.UTF_8).trim();
+		if ("Player".equalsIgnoreCase(name)) {
+			name = name + "#" + getRaceNumber();
+		}
+		return name;
 	}
 
 	@Override
