@@ -35,12 +35,12 @@ public class F1Parser {
 	}
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
-//		F1UdpListener listener = new F1UdpListener();
-//		F1Frame frame = new F1Frame();
+		F1UdpListener listener = new F1UdpListener();
+		F1Frame frame = new F1Frame();
 
-		F1DataHelper.readSingleSerFile("c:/tmp/-2372758205150449044.ser");
+//		F1DataHelper.readSingleSerFile("c:/tmp/-2372758205150449044.ser");
 //		F1Parser.setWriteFile(true);
 
-//		listener.start();
+		listener.start();
 	}
 }

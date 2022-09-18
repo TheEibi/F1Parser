@@ -12,7 +12,7 @@
 	</target>
 	
 	<target name="compile" depends="clean, init" description="compile the source">
-		<javac srcdir="${src}" destdir="${build}" source="9" target="9"/>
+		<javac srcdir="${src}" destdir="${build}" source="11" target="11"/>
 	</target>
 	
 	<target name="dist" depends="compile" description="generate the distribution">
