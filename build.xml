@@ -28,11 +28,11 @@
 
 	<target name="dist" depends="compile" description="generate the distribution">
 		<mkdir dir="${dist}/lib" />
-		<mkdir dir="${buid}/config" />
+		<mkdir dir="${build}/config" />
 		<mkdir dir="${build}/META-INF" />
 		
 
-		<copydir src="config" dest="${buid}/config" />
+		<copydir src="config" dest="${build}/config" />
 		
 		<manifest file="${build}/META-INF/MANIFEST.MF">
 			<attribute name="Class-Path" value="F1Parser.jar lib/log4j-core-2.19.0.jar lib/log4j-api-2.19.0.jar config/log4j2.xml" />
