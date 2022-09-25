@@ -12,7 +12,7 @@ import formula.constants.LapDataConstants;
  * @author reinh
  *
  */
-public class LapData   implements Serializable {
+public class LapData implements Serializable {
 
 	/**
 	 * 
@@ -171,17 +171,17 @@ public class LapData   implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getClass().getSimpleName());
 		sb.append("::");
-		sb.append(String.format("%05d",getLastLapTimeInMS()));
+		sb.append(String.format("%05d", getLastLapTimeInMS()));
 		sb.append("::");
-		sb.append(String.format("%05d",getCurrentLapTimeInMS()));
+		sb.append(String.format("%05d", getCurrentLapTimeInMS()));
 		sb.append("::");
 		sb.append(Long.toUnsignedString(getSector1TimeInMS()));
 		sb.append("::");
 		sb.append(getSector2TimeInMS());
 		sb.append("::");
-		sb.append(String.format("%05f",getLapDistance()));
+		sb.append(String.format("%05f", getLapDistance()));
 		sb.append("::");
-		sb.append(String.format("%05f",getTotalDistance()));
+		sb.append(String.format("%05f", getTotalDistance()));
 		sb.append("::");
 		sb.append(getSafetyCarDelta());
 		sb.append("::");

@@ -12,7 +12,7 @@ import java.util.List;
  * @author reinh
  *
  */
-public class PacketFinalClassification  implements Serializable, IF1Packet {
+public class PacketFinalClassification implements Serializable, IF1Packet {
 
 	/**
 	 * 
@@ -34,7 +34,7 @@ public class PacketFinalClassification  implements Serializable, IF1Packet {
 	public PacketHeader getPacketHeader() {
 		return packetHeader;
 	}
-	
+
 	public short getNumCars() {
 		return numCars;
 	}

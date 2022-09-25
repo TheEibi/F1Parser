@@ -7,10 +7,15 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import formula.packets.CarStatusData;
 import formula.packets.IF1Packet;
 import formula.packets.PacketCarDamage;
 import formula.packets.PacketCarStatus;
@@ -28,16 +33,19 @@ import formula.packets.PacketSession;
  */
 public class F1UdpListener extends Thread {
 
+	private static final Logger log = LogManager.getLogger(F1UdpListener.class);
+	private static final Logger log_penalty = LogManager.getLogger("PENALTY_LOGGER");
+
 	private DatagramSocket socket;
 
-	private static boolean running = true;
+	private boolean running = true;
 
 	public F1UdpListener() {
 		try {
 			socket = new DatagramSocket(20777);
+			socket.setSoTimeout(100);
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e);
 		}
 	}
 
@@ -48,13 +56,18 @@ public class F1UdpListener extends Thread {
 			try {
 				listen();
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.error(e);
 			}
 		}
+
+		log.info("================ END ================");
+
+		System.exit(0);
 	}
 
-	public static void setRunning(boolean argRunning) {
+	public void setRunning(boolean argRunning) {
 		running = argRunning;
+		interrupt();
 	}
 
 	public void listen() throws IOException {
@@ -62,13 +75,18 @@ public class F1UdpListener extends Thread {
 		byte[] buf = new byte[10000];
 
 		DatagramPacket rawPacket = new DatagramPacket(buf, buf.length);
-		socket.receive(rawPacket);
 
+		try {
+			socket.receive(rawPacket);
+
+		} catch (SocketTimeoutException e) {
+			log.trace(e);
+		}
 		byte[] data = Arrays.copyOf(rawPacket.getData(), rawPacket.getLength());
 		parseData(data);
 	}
 
-	private void parseData(byte[] data) throws IOException {
+	private void parseData(byte[] data) {
 		ByteBuffer bb = ByteBuffer.wrap(data);
 		bb = bb.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -142,29 +160,19 @@ public class F1UdpListener extends Thread {
 
 			if (argF1Packet instanceof PacketSession) {
 				handleSession((PacketSession) argF1Packet);
-			}
-
-			if (argF1Packet instanceof PacketLapData) {
+			} else if (argF1Packet instanceof PacketLapData) {
 				handleLapData((PacketLapData) argF1Packet);
-			}
-
-			if (argF1Packet instanceof PacketEventData) {
+			} else if (argF1Packet instanceof PacketEventData) {
 				handleEventData((PacketEventData) argF1Packet);
-			}
-
-			if (argF1Packet instanceof PacketParticipants) {
+			} else if (argF1Packet instanceof PacketParticipants) {
 				handleParticipants((PacketParticipants) argF1Packet);
-			}
-			if (argF1Packet instanceof PacketCarStatus) {
+			} else if (argF1Packet instanceof PacketCarStatus) {
 				handleCarStatus((PacketCarStatus) argF1Packet);
-			}
-			if (argF1Packet instanceof PacketFinalClassification) {
+			} else if (argF1Packet instanceof PacketFinalClassification) {
 				handleFinalClassification((PacketFinalClassification) argF1Packet);
-			}
-			if (argF1Packet instanceof PacketLobbyInfo) {
+			} else if (argF1Packet instanceof PacketLobbyInfo) {
 				handleLobbyInfo((PacketLobbyInfo) argF1Packet);
-			}
-			if (argF1Packet instanceof PacketCarDamage) {
+			} else if (argF1Packet instanceof PacketCarDamage) {
 				handleCarDamage((PacketCarDamage) argF1Packet);
 			}
 
@@ -172,14 +180,14 @@ public class F1UdpListener extends Thread {
 				try {
 					F1DataHelper.writeSingleSerFile(argF1Packet, argF1Packet.getPacketHeader().getSessionUID());
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.error(e);
 				}
 			}
 		}
 	}
 
 	private static void handleSession(PacketSession argPacketSession) {
+		log.debug(argPacketSession);
 	}
 
 	private static void handleLapData(PacketLapData argPacketLapData) {
@@ -194,12 +202,16 @@ public class F1UdpListener extends Thread {
 		F1DataHelper.updateWarnings(F1DataHelper.getFrontVehicleIdx(), 0);
 		F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
 		F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
+
+		log.debug(argPacketLapData);
 	}
 
 	private static void handleEventData(PacketEventData argPacketEventData) {
 		if ("SSTA".equals(argPacketEventData.getEventStringCodeAsString())) {
 			F1DataHelper.setVehicleTrackWarnings(
 					new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+			F1DataHelper.setVehicleCurrentTyre(
+					new short[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
 			F1DataHelper.updateWarnings((short) 0, 0);
 			F1DataHelper.updateWarnings((short) 0, 1);
 			F1DataHelper.updateWarnings((short) 0, 2);
@@ -210,7 +222,8 @@ public class F1UdpListener extends Thread {
 		}
 		if ("PENA".equals(argPacketEventData.getEventStringCodeAsString())) {
 			String name = F1DataHelper.getNameForIdx(argPacketEventData.getEventDataDetails().getVehicleIdx());
-			System.out.println(name + "  " + argPacketEventData);
+			log.debug("{} {}", name, argPacketEventData);
+			log_penalty.info("{} {}", name, argPacketEventData);
 
 			if (5 == argPacketEventData.getEventDataDetails().getPenaltyType()
 					&& (27 == argPacketEventData.getEventDataDetails().getInfringementType()
@@ -228,41 +241,68 @@ public class F1UdpListener extends Thread {
 				F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
 			}
 		}
+		log.debug(argPacketEventData);
 	}
 
 	private static void handleParticipants(PacketParticipants argPacketParticipants) {
+
 		if (F1DataHelper.isUseSelf()) {
 			F1DataHelper.setMyVehicleIdx(argPacketParticipants.getPacketHeader().getPlayerCarIndex());
 		}
 		F1DataHelper.setParticipants(argPacketParticipants);
 		F1Frame.setChangeSelfEnabled(true);
+
+		log.debug(argPacketParticipants);
 	}
 
 	private static void handleCarStatus(PacketCarStatus argCarStatus) {
-		if (F1Parser.isWriteOnce()) {
-			System.out.println(argCarStatus);
-			F1Parser.setWriteOnce(false);
+
+		int i = 0;
+		short[] vehicleCurrentTyre = F1DataHelper.getVehicleCurrentTyre();
+		boolean update = false;
+		for (CarStatusData carStatusData : argCarStatus.getCarStatusDataList()) {
+			if (vehicleCurrentTyre[i] != carStatusData.getVisualTyreCompound()) {
+				vehicleCurrentTyre[i] = carStatusData.getVisualTyreCompound();
+				update = true;
+			}
+			i++;
 		}
+
+		if (update) {
+			F1DataHelper.setVehicleCurrentTyre(vehicleCurrentTyre);
+			F1DataHelper.updateCurrentTyre();
+		}
+		
+		F1DataHelper.updateERSStatus(argCarStatus);
+
+		log.debug(argCarStatus);
 	}
 
 	private static void handleFinalClassification(PacketFinalClassification argPacketFinalClassification) {
+
+		log.debug(argPacketFinalClassification);
 	}
 
 	private static void handleLobbyInfo(PacketLobbyInfo argPacketLobbyInfo) {
+		log.debug(argPacketLobbyInfo);
 	}
 
 	private static void handleCarDamage(PacketCarDamage argCarDamage) {
 
-		F1DataHelper.updateTyres(F1DataHelper.getFrontVehicleIdx(), argCarDamage, 0);
-		F1DataHelper.updateTyres(F1DataHelper.getMyVehicleIdx(), argCarDamage, 1);
-		F1DataHelper.updateTyres(F1DataHelper.getBehindVehicleIdx(), argCarDamage, 2);
+		F1DataHelper.updateTyreWear(argCarDamage);
+		F1DataHelper.updateWarnings();
+		
 
-		F1DataHelper.updateWarnings(F1DataHelper.getFrontVehicleIdx(), 0);
-		F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
-		F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
+
+		log.debug(argCarDamage);
 	}
 
 	public void close() {
 		socket.close();
+	}
+
+	public void reRunFile(String argFileName) {
+		LogManager.shutdown();
+		F1DataHelper.readSingleSerFile(argFileName);
 	}
 }

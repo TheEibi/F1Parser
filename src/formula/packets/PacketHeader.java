@@ -32,7 +32,7 @@ public class PacketHeader implements Serializable {
 		gameMinorVersion = argBb.get();
 		packetVersion = argBb.get();
 		packetId = argBb.get();
-		sessionUID = argBb.getLong() ;
+		sessionUID = argBb.getLong();
 		sessionTime = argBb.getFloat();
 		frameIdentifier = argBb.getInt();
 		playerCarIndex = argBb.get();
@@ -60,9 +60,8 @@ public class PacketHeader implements Serializable {
 	}
 
 	public long getSessionUID() {
-		
-		
-		return sessionUID ;
+
+		return sessionUID;
 	}
 
 	public float getSessionTime() {

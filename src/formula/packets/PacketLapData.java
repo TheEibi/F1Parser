@@ -12,7 +12,7 @@ import java.util.List;
  * @author reinh
  *
  */
-public class PacketLapData implements Serializable, IF1Packet{
+public class PacketLapData implements Serializable, IF1Packet {
 
 	/**
 	 * 

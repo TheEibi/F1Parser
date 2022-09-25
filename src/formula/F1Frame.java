@@ -4,7 +4,8 @@
 package formula;
 
 import java.awt.Color;
-import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
@@ -14,6 +15,9 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * @author reinh
  *
@@ -22,27 +26,39 @@ public class F1Frame {
 
 	private static final String TYRES = "Tyres ";
 	private static final String WARN = "Warn ";
-	private static final String TYRE_LABEL_INIT_VALUE = "100,00 100,00 100,00 100,00";
+	private static final String ERS = "ERS ";
+	private static final String TYRE_LABEL_INIT_VALUE = "100,0 100,0 100,0 100,0";
+	private static final String ERS_LABEL_INIT_VALUE = "100,0";
+
+	private static final Logger log = LogManager.getLogger(F1Frame.class);
 
 	private JFrame frame = new JFrame("F1 warnings");
 	private static JLabel warningsFrontLabel = new JLabel(WARN);
 	private static JLabel warningsSelfLabel = new JLabel(WARN);
 	private static JLabel warningsBehindLabel = new JLabel(WARN);
 
-	private static JLabel vehicleFrontLabel = new JLabel("Front:");
+	private static JLabel ersFrontLabel = new JLabel(ERS);
+	private static JLabel ersSelfLabel = new JLabel(ERS);
+	private static JLabel ersBehindLabel = new JLabel(ERS);
+
+	private static JLabel vehicleFrontLabel = new JLabel("Front: ");
 	private static JLabel tyreFrontLabel = new JLabel(TYRES);
 	private static JLabel spacer1Label = new JLabel("           |           ");
 
-	private static JLabel vehicleSelfLabel = new JLabel("Self:");
+	private static JLabel vehicleSelfLabel = new JLabel("Self: ");
 	private static JLabel tyreSelfLabel = new JLabel(TYRES);
 	private static JLabel spacer2Label = new JLabel("           |           ");
 
-	private static JLabel vehicleBehindLabel = new JLabel("Behind:");
+	private static JLabel vehicleBehindLabel = new JLabel("Behind: ");
 	private static JLabel tyreBehindLabel = new JLabel(TYRES);
 
 	private static JLabel vehicleTyreFront = new JLabel(TYRE_LABEL_INIT_VALUE);
 	private static JLabel vehicleTyreSelf = new JLabel(TYRE_LABEL_INIT_VALUE);
 	private static JLabel vehicleTyreBehind = new JLabel(TYRE_LABEL_INIT_VALUE);
+
+	private static JLabel vehicleERSFront = new JLabel(ERS_LABEL_INIT_VALUE);
+	private static JLabel vehicleERSSelf = new JLabel(ERS_LABEL_INIT_VALUE);
+	private static JLabel vehicleERSBehind = new JLabel(ERS_LABEL_INIT_VALUE);
 
 	private static JLabel vehicleWarningFront = new JLabel("warnfront");
 	private static JLabel vehicleWarningSelf = new JLabel("warnself");
@@ -55,32 +71,19 @@ public class F1Frame {
 		changeSelf.setEnabled(false);
 
 		frame.setUndecorated(true);
+		frame.setBackground(Color.BLACK);
 
 		frame.setAlwaysOnTop(true);
-		frame.setLayout(new FlowLayout());
-		frame.setSize(1300, 75);
-		frame.add(vehicleFrontLabel);
-		frame.add(warningsFrontLabel);
-		frame.add(vehicleWarningFront);
-		frame.add(tyreFrontLabel);
-		frame.add(vehicleTyreFront);
-		frame.add(spacer1Label);
-		frame.add(vehicleSelfLabel);
-		frame.add(warningsSelfLabel);
-		frame.add(vehicleWarningSelf);
-		frame.add(tyreSelfLabel);
-		frame.add(vehicleTyreSelf);
-		frame.add(changeSelf);
-		frame.add(spacer2Label);
-		frame.add(vehicleBehindLabel);
-		frame.add(warningsBehindLabel);
-		frame.add(vehicleWarningBehind);
-		frame.add(tyreBehindLabel);
-		frame.add(vehicleTyreBehind);
+		frame.setLayout(new GridBagLayout());
 
-		vehicleWarningFront.setOpaque(true);
-		vehicleWarningSelf.setOpaque(true);
-		vehicleWarningBehind.setOpaque(true);
+		GridBagConstraints grid = new GridBagConstraints();
+
+		grid.fill = GridBagConstraints.CENTER;
+		grid.weightx = 1.0;
+		frame.setSize(1300, 50);
+		addCarFrontComponents(grid);
+		addCarSelfComponents(grid);
+		addCarBehindComponents(grid);
 
 		frame.add(close);
 
@@ -93,16 +96,11 @@ public class F1Frame {
 				choices[i] = F1DataHelper.getParticipants().getParticipantDataList().get(i).getNameAsString();
 			}
 
-			String input = "";
-			if (F1DataHelper.getMyVehicleIdx() < 0) {
-				input = (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
-						JOptionPane.QUESTION_MESSAGE, null, choices, choices[0]);
-			} else {
-				input = (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
-						JOptionPane.QUESTION_MESSAGE, null, choices, choices[F1DataHelper.getMyVehicleIdx()]);
-			}
+			String input = (String) JOptionPane.showInputDialog(null, "Select driver:", "Driver select",
+					JOptionPane.QUESTION_MESSAGE, null, choices,
+					choices[F1DataHelper.getMyVehicleIdx() < 0 ? 0 : F1DataHelper.getMyVehicleIdx()]);
 
-			System.out.println(input);
+			log.debug(input);
 
 			int i = 0;
 			for (; i < choices.length; i++) {
@@ -112,7 +110,7 @@ public class F1Frame {
 			}
 
 			F1DataHelper.setMyVehicleIdx((short) i);
-			System.out.println(F1DataHelper.getMyVehicleIdx());
+			log.debug(F1DataHelper.getMyVehicleIdx());
 
 			F1DataHelper.setUseSelf(false);
 
@@ -161,9 +159,7 @@ public class F1Frame {
 					e.printStackTrace();
 				}
 
-				F1UdpListener.setRunning(false);
-
-				System.exit(0);
+				F1Parser.getF1UdpListener().setRunning(false);
 			}
 
 			@Override
@@ -176,6 +172,51 @@ public class F1Frame {
 				// egal
 			}
 		});
+	}
+
+	private void addCarFrontComponents(GridBagConstraints grid) {
+		frame.add(vehicleFrontLabel, grid);
+		frame.add(warningsFrontLabel, grid);
+		frame.add(vehicleWarningFront, grid);
+		frame.add(tyreFrontLabel, grid);
+		frame.add(vehicleTyreFront, grid);
+		frame.add(ersFrontLabel, grid);
+		frame.add(vehicleERSFront, grid);
+		frame.add(spacer1Label, grid);
+
+		vehicleTyreFront.setOpaque(true);
+		vehicleWarningFront.setOpaque(true);
+		vehicleERSFront.setOpaque(true);
+	}
+
+	private void addCarSelfComponents(GridBagConstraints grid) {
+		frame.add(vehicleSelfLabel, grid);
+		frame.add(warningsSelfLabel, grid);
+		frame.add(vehicleWarningSelf, grid);
+		frame.add(tyreSelfLabel, grid);
+		frame.add(vehicleTyreSelf, grid);
+		frame.add(ersSelfLabel, grid);
+		frame.add(vehicleERSSelf, grid);
+		frame.add(changeSelf, grid);
+		frame.add(spacer2Label, grid);
+
+		vehicleTyreSelf.setOpaque(true);
+		vehicleWarningSelf.setOpaque(true);
+		vehicleERSSelf.setOpaque(true);
+	}
+
+	private void addCarBehindComponents(GridBagConstraints grid) {
+		frame.add(vehicleBehindLabel, grid);
+		frame.add(warningsBehindLabel, grid);
+		frame.add(vehicleWarningBehind, grid);
+		frame.add(tyreBehindLabel, grid);
+		frame.add(vehicleTyreBehind, grid);
+		frame.add(ersBehindLabel, grid);
+		frame.add(vehicleERSBehind, grid);
+
+		vehicleTyreBehind.setOpaque(true);
+		vehicleWarningBehind.setOpaque(true);
+		vehicleERSBehind.setOpaque(true);
 	}
 
 	public static void setChangeSelfEnabled(boolean argEnabled) {
@@ -192,6 +233,18 @@ public class F1Frame {
 
 	public static void setTyreBehindText(String argText) {
 		vehicleTyreBehind.setText(argText);
+	}
+
+	public static void setTyreFrontColor(Color argColor) {
+		vehicleTyreFront.setBackground(argColor);
+	}
+
+	public static void setTyreSelfColor(Color argColor) {
+		vehicleTyreSelf.setBackground(argColor);
+	}
+
+	public static void setTyreBehindColor(Color argColor) {
+		vehicleTyreBehind.setBackground(argColor);
 	}
 
 	public static void setWarningFrontText(String argText) {
@@ -216,6 +269,21 @@ public class F1Frame {
 
 	public static void setWarningBehindColor(Color argColor) {
 		vehicleWarningBehind.setBackground(argColor);
+	}
+
+	public static void setERSFront(String argText, Color argColor) {
+		vehicleERSFront.setText(argText);
+		vehicleERSFront.setBackground(argColor);
+	}
+
+	public static void setERSSelf(String argText, Color argColor) {
+		vehicleERSSelf.setText(argText);
+		vehicleERSSelf.setBackground(argColor);
+	}
+
+	public static void setERSBehind(String argText, Color argColor) {
+		vehicleERSBehind.setText(argText);
+		vehicleERSBehind.setBackground(argColor);
 	}
 
 }

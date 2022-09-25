@@ -4,7 +4,6 @@
 package formula;
 
 import java.awt.Color;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,7 +11,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import formula.constants.TyreConstants;
+import formula.packets.IF1Packet;
 import formula.packets.PacketCarDamage;
+import formula.packets.PacketCarStatus;
+import formula.packets.PacketFinalClassification;
 import formula.packets.PacketLapData;
 import formula.packets.PacketParticipants;
 
@@ -32,10 +38,15 @@ public class F1DataHelper {
 	private static boolean useSelf = true;
 	private static int[] vehicleTrackWarnings = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0 };
+
+	private static short[] vehicleCurrentTyre = new short[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0 };
 	private static PacketParticipants participants;
 
 	private static FileOutputStream fos = null;
 	private static ObjectOutputStream oos = null;
+
+	private static final Logger log = LogManager.getLogger(F1DataHelper.class);
 
 	public static int[] getVehicleTrackWarnings() {
 		return vehicleTrackWarnings;
@@ -43,6 +54,14 @@ public class F1DataHelper {
 
 	public static void setVehicleTrackWarnings(int[] argVehicleTrackWarnings) {
 		vehicleTrackWarnings = argVehicleTrackWarnings;
+	}
+
+	public static short[] getVehicleCurrentTyre() {
+		return vehicleCurrentTyre;
+	}
+
+	public static void setVehicleCurrentTyre(short[] argVehicleCurrentTyre) {
+		vehicleCurrentTyre = argVehicleCurrentTyre;
 	}
 
 	public static short getFrontVehicleIdx() {
@@ -78,6 +97,9 @@ public class F1DataHelper {
 	}
 
 	public static String getNameForIdx(short argVehicleIdx) {
+		if (participants == null) {
+			return "";
+		}
 		return participants.getParticipantDataList().get(argVehicleIdx).getNameAsString();
 	}
 
@@ -127,7 +149,11 @@ public class F1DataHelper {
 		return 20;
 	}
 
-	public static void writeSingleSerFile(Object argObj, long argSessionUUID) throws IOException {
+	public static void writeSingleSerFile(IF1Packet argF1Packet, long argSessionUUID) throws IOException {
+		if (argF1Packet instanceof PacketFinalClassification) {
+			argSessionUUID *= -1;
+		}
+
 		if (curSessionUUID != argSessionUUID && fos != null) {
 			oos.flush();
 			fos.flush();
@@ -142,7 +168,7 @@ public class F1DataHelper {
 		if (oos == null)
 			oos = new ObjectOutputStream(fos);
 
-		oos.writeUnshared(argObj);
+		oos.writeUnshared(argF1Packet);
 		oos.flush();
 	}
 
@@ -154,37 +180,45 @@ public class F1DataHelper {
 		vehicleTrackWarnings[vehicleIdx] = 0;
 	}
 
-	public static void readSingleSerFile(String argFileName) throws IOException, ClassNotFoundException {
+	public static void readSingleSerFile(String argFileName) {
 		File f = new File(argFileName);
-		FileInputStream fis = new FileInputStream(f);
-		ObjectInputStream ois = new ObjectInputStream(fis);
 
 		Object obj;
 
 		boolean read = true;
+		try (FileInputStream fis = new FileInputStream(f); ObjectInputStream ois = new ObjectInputStream(fis)) {
 
-		try (ois) {
 			while (read) {
 				obj = ois.readUnshared();
-				if (obj != null)
-					System.out.println(obj.toString());
-
+				if (obj instanceof IF1Packet) {
+					F1UdpListener.handlePacket((IF1Packet) obj);
+				}
 			}
-		} catch (EOFException e) {
+		} catch (IOException | ClassNotFoundException e) {
 			read = false;
-			System.out.println("jetzt is aus");
+			log.info("jetzt is aus");
 		}
+
 	}
 
-	public static void updateTyres(short argVehicleIdx, PacketCarDamage argPacket, int argType) {
+	public static void updateTyreWear(PacketCarDamage argCarDamage) {
+		F1DataHelper.updateTyreWear(F1DataHelper.getFrontVehicleIdx(), argCarDamage, 0);
+		F1DataHelper.updateTyreWear(F1DataHelper.getMyVehicleIdx(), argCarDamage, 1);
+		F1DataHelper.updateTyreWear(F1DataHelper.getBehindVehicleIdx(), argCarDamage, 2);
+
+	}
+
+	public static void updateTyreWear(short argVehicleIdx, PacketCarDamage argPacket, int argType) {
 		if (argVehicleIdx < 0) {
 			return;
 		}
 		float[] tyreWear = argPacket.getCarDamageDataList().get(argVehicleIdx).getTyresWear();
+
 		StringBuilder sb = new StringBuilder();
-		if (isPublicTelemetryForIdx(argVehicleIdx)) {
+		if (isPublicTelemetryForIdx(argVehicleIdx) && argVehicleIdx != getMyVehicleIdx()) {
 			sb.append("<html><strike>");
 		}
+
 		sb.append(String.format(DECIMAL_FORMAT, (tyreWear[2])));
 		sb.append(" ");
 		sb.append(String.format(DECIMAL_FORMAT, (tyreWear[3])));
@@ -192,7 +226,7 @@ public class F1DataHelper {
 		sb.append(String.format(DECIMAL_FORMAT, (tyreWear[0])));
 		sb.append(" ");
 		sb.append(String.format(DECIMAL_FORMAT, (tyreWear[1])));
-		if (isPublicTelemetryForIdx(argVehicleIdx)) {
+		if (isPublicTelemetryForIdx(argVehicleIdx) && argVehicleIdx != getMyVehicleIdx()) {
 			sb.append("</strike></html>");
 		}
 
@@ -206,6 +240,88 @@ public class F1DataHelper {
 			F1Frame.setTyreBehindText(sb.toString());
 		}
 
+	}
+
+	public static void updateCurrentTyre() {
+		F1DataHelper.updateCurrentTyre(F1DataHelper.getFrontVehicleIdx(), 0);
+		F1DataHelper.updateCurrentTyre(F1DataHelper.getMyVehicleIdx(), 1);
+		F1DataHelper.updateCurrentTyre(F1DataHelper.getBehindVehicleIdx(), 2);
+	}
+
+	public static void updateCurrentTyre(short argVehicleIdx, int argType) {
+		if (argVehicleIdx < 0) {
+			return;
+		}
+		short currentTyre = getVehicleCurrentTyre()[argVehicleIdx];
+
+		String currentCompoundName = TyreConstants.VISUAL_COMPOUND.get(currentTyre);
+
+		Color tyreColor = null;
+
+		switch (currentCompoundName) {
+		case "INTERMEDIATE":
+			tyreColor = Color.GREEN;
+			break;
+		case "WET":
+			tyreColor = Color.BLUE;
+			break;
+		case "SOFT":
+			tyreColor = Color.RED;
+			break;
+		case "MEDIUM":
+			tyreColor = Color.YELLOW;
+			break;
+		case "HARD":
+			tyreColor = Color.WHITE;
+			break;
+		case "SUPER SOFT":
+			tyreColor = Color.PINK;
+			break;
+		default:
+			break;
+
+		}
+
+		if (argType == 0) {
+			F1Frame.setTyreFrontColor(tyreColor);
+		}
+		if (argType == 1) {
+			F1Frame.setTyreSelfColor(tyreColor);
+		}
+		if (argType == 2) {
+			F1Frame.setTyreBehindColor(tyreColor);
+		}
+
+	}
+
+	public static void updateERSStatus(PacketCarStatus argCarStatus) {
+		F1DataHelper.updateERSStatus(F1DataHelper.getFrontVehicleIdx(), argCarStatus, 0);
+		F1DataHelper.updateERSStatus(F1DataHelper.getMyVehicleIdx(), argCarStatus, 1);
+		F1DataHelper.updateERSStatus(F1DataHelper.getBehindVehicleIdx(), argCarStatus, 2);
+	}
+
+	public static void updateERSStatus(short argVehicleIdx, PacketCarStatus argCarStatus, int argType) {
+
+		String ersText = String.format(DECIMAL_FORMAT,
+				argCarStatus.getCarStatusDataList().get(argVehicleIdx).getErsStoreEnergy() / 40000, 0);
+		Color ersColor = argCarStatus.getCarStatusDataList().get(argVehicleIdx).getErsDeployMode() == 3 ? Color.BLUE
+				: Color.WHITE;
+
+		if (argType == 0) {
+			F1Frame.setERSFront(ersText, ersColor);
+		}
+		if (argType == 1) {
+			F1Frame.setERSSelf(ersText, ersColor);
+		}
+		if (argType == 2) {
+			F1Frame.setERSBehind(ersText, ersColor);
+		}
+	}
+
+	public static void updateWarnings() {
+		F1DataHelper.updateWarnings(F1DataHelper.getFrontVehicleIdx(), 0);
+		F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
+		F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
 	}
 
 	public static void updateWarnings(short argVehicleIdx, int argType) {
@@ -234,6 +350,9 @@ public class F1DataHelper {
 			F1Frame.setWarningBehindText(text);
 			F1Frame.setWarningBehindColor(bgColor);
 		}
+	}
+
+	private F1DataHelper() {
 	}
 
 }

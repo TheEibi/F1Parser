@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import formula.constants.NationalityConstants;
 import formula.constants.TeamConstants;
 
-public class LobbyInfoData  implements Serializable {
+public class LobbyInfoData implements Serializable {
 
 	/**
 	 * 
@@ -66,7 +66,7 @@ public class LobbyInfoData  implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append(getClass().getSimpleName());
 		sb.append("::");
-		sb.append(Byte.toUnsignedInt((byte)getAiControlled()));
+		sb.append(Byte.toUnsignedInt((byte) getAiControlled()));
 		sb.append("::");
 		sb.append(TeamConstants.TEAM_ID.get(getTeamId()));
 		sb.append("::");

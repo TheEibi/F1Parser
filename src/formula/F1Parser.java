@@ -3,7 +3,8 @@
  */
 package formula;
 
-import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * @author reinh
@@ -17,6 +18,14 @@ public class F1Parser {
 	private static boolean writeOnce = true;
 
 	private static boolean writeFile = false;
+
+	private static final Logger log = LogManager.getLogger(F1Parser.class);
+
+	private static F1UdpListener listener;
+
+	public static F1UdpListener getF1UdpListener() {
+		return listener;
+	}
 
 	public static boolean isWriteOnce() {
 		return writeOnce;
@@ -34,11 +43,15 @@ public class F1Parser {
 		return writeFile;
 	}
 
-	public static void main(String[] args) throws IOException, ClassNotFoundException {
-		F1UdpListener listener = new F1UdpListener();
-		F1Frame frame = new F1Frame();
+	public static void main(String[] args) {
 
-//		F1DataHelper.readSingleSerFile("c:/tmp/-2372758205150449044.ser");
+		System.setProperty("log4j.configurationFile", "config/log4j2.xml");
+
+		log.info("=============== START ===============");
+		listener = new F1UdpListener();
+		new F1Frame();
+
+//		listener.reRunFile("c:/tmp/6671952044268505725.ser");
 //		F1Parser.setWriteFile(true);
 
 		listener.start();

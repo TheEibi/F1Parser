@@ -5,13 +5,13 @@ import java.nio.ByteBuffer;
 
 import formula.constants.SessionConstants;
 
-public class MarshallZone  implements Serializable {
+public class MarshallZone implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -385268949882169918L;
-	public float zoneStart;
-	public short zoneFlag;
+	private float zoneStart;
+	private short zoneFlag;
 
 	public MarshallZone(ByteBuffer argBb) {
 		zoneStart = argBb.getFloat();

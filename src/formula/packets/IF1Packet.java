@@ -10,5 +10,4 @@ package formula.packets;
 public interface IF1Packet {
 
 	PacketHeader getPacketHeader();
-	
 }
