@@ -4,19 +4,31 @@
 package formula;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Toolkit;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import formula.data.DriverLapDistance;
+import formula.packets.LapData;
+import formula.packets.PacketLapData;
+import formula.packets.PacketSession;
+import formula.trackpos.F1TrackPositionPanel;
 
 /**
  * @author reinh
@@ -24,6 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class F1Frame {
 
+	private static final int FRAME_WIDTH = 1300;
 	private static final String TYRES = "Tyres ";
 	private static final String WARN = "Warn ";
 	private static final String ERS = "ERS ";
@@ -67,25 +80,44 @@ public class F1Frame {
 	private static JButton changeSelf = new JButton("..");
 	private static JButton close = new JButton("x");
 
+	private static JPanel infoPanel = new JPanel();
+	private static F1TrackPositionPanel trackPosPanel = new F1TrackPositionPanel();
+
 	public F1Frame() {
+
 		changeSelf.setEnabled(false);
 
 		frame.setUndecorated(true);
 		frame.setBackground(Color.BLACK);
 
 		frame.setAlwaysOnTop(true);
-		frame.setLayout(new GridBagLayout());
-
+		frame.setLayout(new GridLayout(1, 1));
+		infoPanel.setLayout(new GridBagLayout());
 		GridBagConstraints grid = new GridBagConstraints();
+
+		infoPanel.setPreferredSize(new Dimension(FRAME_WIDTH, 50));
+		infoPanel.setSize(new Dimension(FRAME_WIDTH, 50));
 
 		grid.fill = GridBagConstraints.CENTER;
 		grid.weightx = 1.0;
-		frame.setSize(1300, 50);
+		grid.gridy = 0;
+		frame.setSize(FRAME_WIDTH, 50);
 		addCarFrontComponents(grid);
 		addCarSelfComponents(grid);
 		addCarBehindComponents(grid);
 
-		frame.add(close);
+		infoPanel.add(close);
+		frame.add(infoPanel);
+		grid.gridy = 1;
+
+		trackPosPanel.setPreferredSize(new Dimension(FRAME_WIDTH, 50));
+		trackPosPanel.setSize(new Dimension(FRAME_WIDTH, 50));
+//		frame.add(trackPosPanel);
+
+		// Put frame in center top of the screen
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+		frame.setLocation(screenSize.width / 2 - frame.getSize().width / 2, 0);
 
 		frame.setVisible(true);
 
@@ -175,14 +207,14 @@ public class F1Frame {
 	}
 
 	private void addCarFrontComponents(GridBagConstraints grid) {
-		frame.add(vehicleFrontLabel, grid);
-		frame.add(warningsFrontLabel, grid);
-		frame.add(vehicleWarningFront, grid);
-		frame.add(tyreFrontLabel, grid);
-		frame.add(vehicleTyreFront, grid);
-		frame.add(ersFrontLabel, grid);
-		frame.add(vehicleERSFront, grid);
-		frame.add(spacer1Label, grid);
+		infoPanel.add(vehicleFrontLabel, grid);
+		infoPanel.add(warningsFrontLabel, grid);
+		infoPanel.add(vehicleWarningFront, grid);
+		infoPanel.add(tyreFrontLabel, grid);
+		infoPanel.add(vehicleTyreFront, grid);
+		infoPanel.add(ersFrontLabel, grid);
+		infoPanel.add(vehicleERSFront, grid);
+		infoPanel.add(spacer1Label, grid);
 
 		vehicleTyreFront.setOpaque(true);
 		vehicleWarningFront.setOpaque(true);
@@ -190,15 +222,15 @@ public class F1Frame {
 	}
 
 	private void addCarSelfComponents(GridBagConstraints grid) {
-		frame.add(vehicleSelfLabel, grid);
-		frame.add(warningsSelfLabel, grid);
-		frame.add(vehicleWarningSelf, grid);
-		frame.add(tyreSelfLabel, grid);
-		frame.add(vehicleTyreSelf, grid);
-		frame.add(ersSelfLabel, grid);
-		frame.add(vehicleERSSelf, grid);
-		frame.add(changeSelf, grid);
-		frame.add(spacer2Label, grid);
+		infoPanel.add(vehicleSelfLabel, grid);
+		infoPanel.add(warningsSelfLabel, grid);
+		infoPanel.add(vehicleWarningSelf, grid);
+		infoPanel.add(tyreSelfLabel, grid);
+		infoPanel.add(vehicleTyreSelf, grid);
+		infoPanel.add(ersSelfLabel, grid);
+		infoPanel.add(vehicleERSSelf, grid);
+		infoPanel.add(changeSelf, grid);
+		infoPanel.add(spacer2Label, grid);
 
 		vehicleTyreSelf.setOpaque(true);
 		vehicleWarningSelf.setOpaque(true);
@@ -206,13 +238,13 @@ public class F1Frame {
 	}
 
 	private void addCarBehindComponents(GridBagConstraints grid) {
-		frame.add(vehicleBehindLabel, grid);
-		frame.add(warningsBehindLabel, grid);
-		frame.add(vehicleWarningBehind, grid);
-		frame.add(tyreBehindLabel, grid);
-		frame.add(vehicleTyreBehind, grid);
-		frame.add(ersBehindLabel, grid);
-		frame.add(vehicleERSBehind, grid);
+		infoPanel.add(vehicleBehindLabel, grid);
+		infoPanel.add(warningsBehindLabel, grid);
+		infoPanel.add(vehicleWarningBehind, grid);
+		infoPanel.add(tyreBehindLabel, grid);
+		infoPanel.add(vehicleTyreBehind, grid);
+		infoPanel.add(ersBehindLabel, grid);
+		infoPanel.add(vehicleERSBehind, grid);
 
 		vehicleTyreBehind.setOpaque(true);
 		vehicleWarningBehind.setOpaque(true);
@@ -284,6 +316,37 @@ public class F1Frame {
 	public static void setERSBehind(String argText, Color argColor) {
 		vehicleERSBehind.setText(argText);
 		vehicleERSBehind.setBackground(argColor);
+	}
+
+	public static void drawTrackPosition(PacketLapData argPacketLapData) {
+
+		if (F1DataHelper.getParticipants() != null) {
+			List<DriverLapDistance> dldList = new ArrayList<>();
+
+			short i = 0;
+			for (LapData ld : argPacketLapData.getLapDataList()) {
+				if (ld.getResultStatus() != 0 && ld.getResultStatus() != 7) {
+					DriverLapDistance dld = new DriverLapDistance();
+					float lapprogress = ld.getLapDistance() / F1DataHelper.getTrackLength();
+
+					dld.setVehicleIdx(i);
+
+					dld.setRaceNumber(F1DataHelper.getParticipants().getParticipantDataList().get(i).getRaceNumber());
+					dld.setTeamColor(F1DataHelper.getParticipants().getParticipantDataList().get(i).getTeamId());
+					dld.setLapDistance(lapprogress * FRAME_WIDTH + FRAME_WIDTH / 4f);
+					dldList.add(dld);
+				}
+				i++;
+			}
+
+			trackPosPanel.setDriverLapDistance(dldList);
+			trackPosPanel.repaint();
+		}
+	}
+
+	public static void drawSafetyCarStatus(PacketSession argPacketSession) {
+
+		trackPosPanel.setSafetyCarType(argPacketSession.getSafetyCarStatus());
 	}
 
 }

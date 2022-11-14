@@ -15,6 +15,8 @@ import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import formula.constants.SessionConstants;
+import formula.constants.TrackConstants;
 import formula.packets.CarStatusData;
 import formula.packets.IF1Packet;
 import formula.packets.PacketCarDamage;
@@ -108,35 +110,28 @@ public class F1UdpListener extends Thread {
 			break;
 		case 3:
 			// event
-
 			packet = new PacketEventData(ph, bb);
 			break;
 		case 4:
 			// participants
-
 			packet = new PacketParticipants(ph, bb);
 			break;
 		case 5:
 			// car setups
-
 			break;
 		case 6:
 			// car telemetry
-
 			break;
 		case 7:
 			// car status
-
 			packet = new PacketCarStatus(ph, bb);
 			break;
 		case 8:
 			// final classification
-
 			packet = new PacketFinalClassification(ph, bb);
 			break;
 		case 9:
 			// lobby info
-
 			packet = new PacketLobbyInfo(ph, bb);
 			break;
 		case 10:
@@ -145,7 +140,6 @@ public class F1UdpListener extends Thread {
 			break;
 		case 11:
 			// session history
-
 			break;
 		default:
 			break;
@@ -187,6 +181,9 @@ public class F1UdpListener extends Thread {
 	}
 
 	private static void handleSession(PacketSession argPacketSession) {
+		F1DataHelper.setTrackId(argPacketSession.getTrackId());
+		F1DataHelper.setTrackLength(argPacketSession.getTrackLength());
+		F1Frame.drawSafetyCarStatus(argPacketSession);
 		log.debug(argPacketSession);
 	}
 
@@ -203,6 +200,10 @@ public class F1UdpListener extends Thread {
 		F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
 		F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
 
+		F1DataHelper.createDriverLapPosition(argPacketLapData);
+
+		F1Frame.drawTrackPosition(argPacketLapData);
+
 		log.debug(argPacketLapData);
 	}
 
@@ -215,15 +216,23 @@ public class F1UdpListener extends Thread {
 			F1DataHelper.updateWarnings((short) 0, 0);
 			F1DataHelper.updateWarnings((short) 0, 1);
 			F1DataHelper.updateWarnings((short) 0, 2);
+			F1DataHelper.resetDriverLapPosition();
+			F1DataHelper.resetDriverDistance();
 		}
 		if ("SEND".equals(argPacketEventData.getEventStringCodeAsString())) {
 			F1DataHelper.setUseSelf(true);
 			F1Frame.setChangeSelfEnabled(false);
+			log.info("{}: {}m", TrackConstants.TRACK.get(F1DataHelper.getTrackId()), F1DataHelper.getTrackLength());
+			
+			F1DataHelper.printLeadingLaps();
+			
+			F1DataHelper.printTotalDrivenDistance();
 		}
 		if ("PENA".equals(argPacketEventData.getEventStringCodeAsString())) {
 			String name = F1DataHelper.getNameForIdx(argPacketEventData.getEventDataDetails().getVehicleIdx());
 			log.debug("{} {}", name, argPacketEventData);
 			log_penalty.info("{} {}", name, argPacketEventData);
+			System.out.println(name + " " + argPacketEventData);
 
 			if (5 == argPacketEventData.getEventDataDetails().getPenaltyType()
 					&& (27 == argPacketEventData.getEventDataDetails().getInfringementType()
@@ -272,7 +281,7 @@ public class F1UdpListener extends Thread {
 			F1DataHelper.setVehicleCurrentTyre(vehicleCurrentTyre);
 			F1DataHelper.updateCurrentTyre();
 		}
-		
+
 		F1DataHelper.updateERSStatus(argCarStatus);
 
 		log.debug(argCarStatus);
@@ -291,8 +300,6 @@ public class F1UdpListener extends Thread {
 
 		F1DataHelper.updateTyreWear(argCarDamage);
 		F1DataHelper.updateWarnings();
-		
-
 
 		log.debug(argCarDamage);
 	}

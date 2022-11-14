@@ -8,19 +8,36 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import formula.constants.SessionConstants;
+import formula.constants.TrackConstants;
 import formula.constants.TyreConstants;
+import formula.data.DriverLapPosition;
 import formula.packets.IF1Packet;
+import formula.packets.LapData;
 import formula.packets.PacketCarDamage;
 import formula.packets.PacketCarStatus;
 import formula.packets.PacketFinalClassification;
 import formula.packets.PacketLapData;
 import formula.packets.PacketParticipants;
+import formula.packets.PacketSession;
 
 /**
  * @author reinh
@@ -43,8 +60,19 @@ public class F1DataHelper {
 			0, 0, 0 };
 	private static PacketParticipants participants;
 
+	private static Map<Short, List<DriverLapPosition>> dlpMap = new HashMap<>();
+
+	private static List<Float> driverDistanceTotal = new ArrayList<>(
+			Arrays.asList(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f));
+
+	private static short trackId = -1;
+	private static short trackLength = -1;
+
 	private static FileOutputStream fos = null;
 	private static ObjectOutputStream oos = null;
+	
+	private static String session = "";
+	private static String track = "";
 
 	private static final Logger log = LogManager.getLogger(F1DataHelper.class);
 
@@ -150,6 +178,11 @@ public class F1DataHelper {
 	}
 
 	public static void writeSingleSerFile(IF1Packet argF1Packet, long argSessionUUID) throws IOException {
+		if (argF1Packet instanceof PacketSession) {
+			session = SessionConstants.SESSION_TYPE.get(((PacketSession) argF1Packet).getSessionType());
+			track = TrackConstants.TRACK.get(((PacketSession) argF1Packet).getTrackId());
+		}
+
 		if (argF1Packet instanceof PacketFinalClassification) {
 			argSessionUUID *= -1;
 		}
@@ -161,6 +194,9 @@ public class F1DataHelper {
 			fos.close();
 			oos = null;
 			fos = null;
+
+			renamefile(curSessionUUID, track, session);
+
 			curSessionUUID = argSessionUUID;
 		}
 		if (fos == null)
@@ -170,6 +206,15 @@ public class F1DataHelper {
 
 		oos.writeUnshared(argF1Packet);
 		oos.flush();
+	}
+
+	protected static void renamefile(long argSessionUUID, String argTrackName, String argSessionName) {
+		Path source = Paths.get("c:/tmp/" + argSessionUUID + ".ser");
+		try {
+			Files.move(source, source.resolveSibling(argTrackName + "_" + argSessionName + "_" + argSessionUUID));
+		} catch (IOException e) {
+			log.error("Error renaming file", e);
+		}
 	}
 
 	public static void increaseWarningByVehicleIdx(short vehicleIdx) {
@@ -258,6 +303,10 @@ public class F1DataHelper {
 
 		Color tyreColor = null;
 
+		if (currentCompoundName == null) {
+			currentCompoundName = "WET";
+		}
+
 		switch (currentCompoundName) {
 		case "INTERMEDIATE":
 			tyreColor = Color.GREEN;
@@ -301,6 +350,9 @@ public class F1DataHelper {
 	}
 
 	public static void updateERSStatus(short argVehicleIdx, PacketCarStatus argCarStatus, int argType) {
+		if (argVehicleIdx < 0) {
+			return;
+		}
 
 		String ersText = String.format(DECIMAL_FORMAT,
 				argCarStatus.getCarStatusDataList().get(argVehicleIdx).getErsStoreEnergy() / 40000, 0);
@@ -352,7 +404,101 @@ public class F1DataHelper {
 		}
 	}
 
+	public static void createDriverLapPosition(PacketLapData argPacketLapData) {
+		short idx = 0;
+		for (LapData lapData : argPacketLapData.getLapDataList()) {
+			if (lapData.getCurrentLapNum() > getLastLapNumberPerDriver(idx)) {
+				addNewLap(new DriverLapPosition(idx, lapData.getCurrentLapNum(), lapData.getCarPosition()));
+			}
+			float driverCurrTotal = driverDistanceTotal.get(idx);
+			if (driverCurrTotal <= lapData.getTotalDistance() && lapData.getResultStatus() != 3) {
+				driverDistanceTotal.set(idx, lapData.getTotalDistance());
+			}
+
+			idx++;
+		}
+	}
+
+	public static void addNewLap(DriverLapPosition argDriverLapPosition) {
+		List<DriverLapPosition> dlpList = dlpMap.getOrDefault(argDriverLapPosition.getVehicleId(), new ArrayList<>());
+		dlpList.add(argDriverLapPosition);
+		dlpMap.put(Short.valueOf(argDriverLapPosition.getVehicleId()), dlpList);
+	}
+
+	public static int getLastLapNumberPerDriver(short argVehicleIdx) {
+		List<DriverLapPosition> dlpList = dlpMap.get(argVehicleIdx);
+		if (dlpList == null) {
+			return 0;
+		}
+		return dlpList.get(dlpList.size() - 1).getLapNo();
+	}
+
+	public static void resetDriverLapPosition() {
+		dlpMap = new HashMap<>();
+	}
+
+	public static void resetDriverDistance() {
+		driverDistanceTotal = new ArrayList<>(
+				Arrays.asList(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f));
+	}
+
+	public static void printLeadingLaps() {
+		log.info("Leading Laps");
+		for (List<DriverLapPosition> dlpList : dlpMap.values()) {
+			short vehicleIdx = 0;
+			int leadcount = 0;
+			for (DriverLapPosition driverLapPosition : dlpList) {
+				vehicleIdx = driverLapPosition.getVehicleId();
+				if (driverLapPosition.getPos() == 1) {
+					leadcount += 1;
+				}
+			}
+			if (leadcount > 0) {
+				log.info("{}: {}", F1DataHelper.getNameForIdx(vehicleIdx), leadcount);
+			}
+		}
+	}
+
+	public static void printTotalDrivenDistance() {
+		log.info("Distance Driven");
+		for (short i = 0; i < driverDistanceTotal.size(); i++) {
+			log.info("{}: {}m", F1DataHelper.getNameForIdx(i),
+					NumberFormat.getInstance(Locale.GERMAN).format(driverDistanceTotal.get(i)));
+
+		}
+	}
+
+	public static void setTrackId(short argTrackId) {
+		trackId = argTrackId;
+	}
+
+	public static short getTrackId() {
+		return trackId;
+	}
+
+	public static void setTrackLength(short argTrackLength) {
+		trackLength = argTrackLength;
+	}
+
+	public static short getTrackLength() {
+		return trackLength;
+	}
+
+	static {
+		Properties props = System.getProperties();
+
+		try (InputStream in = new FileInputStream("config/players.properties")) {
+			props.load(in);
+			props.putAll(System.getProperties());
+			System.setProperties(props);
+		} catch (IOException ex) {
+			log.error(ex);
+		}
+
+	}
+
 	private F1DataHelper() {
+
 	}
 
 }

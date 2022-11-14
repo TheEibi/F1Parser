@@ -139,4 +139,6 @@ public class SessionConstants {
 		SESSION_LENGTH.put((short) 7, "FULL");
 		
 	}
+	
+	private SessionConstants() {}
 }

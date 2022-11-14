@@ -2,15 +2,15 @@
 <Configuration status="INFO">
 	<Appenders>
 		<RollingFile name="parserLog" fileName="logs/parser.log" filePattern="logs/parser.log-%d{yyyy-MM-dd}-%i">
-			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %msg :: %logger{36}%n" />
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
 			<OnStartupTriggeringPolicy />
 		</RollingFile>
 				<RollingFile name="penaltyLog" fileName="logs/penalty.log" filePattern="logs/penalty.log-%d{yyyy-MM-dd}-%i">
-			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %msg :: %logger{36}%n" />
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
 			<OnStartupTriggeringPolicy />
 		</RollingFile>
 		<Console name="Console" target="SYSTEM_OUT">
-			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %msg :: %logger{36}%n" />
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
 		</Console>
 	</Appenders>
 	<Loggers>

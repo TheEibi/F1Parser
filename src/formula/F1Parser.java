@@ -43,7 +43,7 @@ public class F1Parser {
 		return writeFile;
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 
 		System.setProperty("log4j.configurationFile", "config/log4j2.xml");
 
@@ -51,9 +51,13 @@ public class F1Parser {
 		listener = new F1UdpListener();
 		new F1Frame();
 
-//		listener.reRunFile("c:/tmp/6671952044268505725.ser");
+		
+//		Thread.sleep(10000);
+		
+//		listener.reRunFile("c:/tmp/monza.ser");
 //		F1Parser.setWriteFile(true);
 
 		listener.start();
+		
 	}
 }
