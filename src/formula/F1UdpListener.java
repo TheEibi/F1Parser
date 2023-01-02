@@ -15,7 +15,6 @@ import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import formula.constants.SessionConstants;
 import formula.constants.TrackConstants;
 import formula.packets.CarStatusData;
 import formula.packets.IF1Packet;
@@ -203,6 +202,9 @@ public class F1UdpListener extends Thread {
 		F1DataHelper.createDriverLapPosition(argPacketLapData);
 
 		F1Frame.drawTrackPosition(argPacketLapData);
+		
+		
+		F1DataHelper.checkPitstop(argPacketLapData);
 
 		log.debug(argPacketLapData);
 	}
@@ -218,21 +220,23 @@ public class F1UdpListener extends Thread {
 			F1DataHelper.updateWarnings((short) 0, 2);
 			F1DataHelper.resetDriverLapPosition();
 			F1DataHelper.resetDriverDistance();
+			F1DataHelper.resetPitStops();
 		}
 		if ("SEND".equals(argPacketEventData.getEventStringCodeAsString())) {
 			F1DataHelper.setUseSelf(true);
 			F1Frame.setChangeSelfEnabled(false);
 			log.info("{}: {}m", TrackConstants.TRACK.get(F1DataHelper.getTrackId()), F1DataHelper.getTrackLength());
-			
+
 			F1DataHelper.printLeadingLaps();
-			
 			F1DataHelper.printTotalDrivenDistance();
+			F1DataHelper.printFrontWingChanges();
 		}
 		if ("PENA".equals(argPacketEventData.getEventStringCodeAsString())) {
 			String name = F1DataHelper.getNameForIdx(argPacketEventData.getEventDataDetails().getVehicleIdx());
-			log.debug("{} {}", name, argPacketEventData);
-			log_penalty.info("{} {}", name, argPacketEventData);
-			System.out.println(name + " " + argPacketEventData);
+			String nameOther = F1DataHelper
+					.getNameForIdx(argPacketEventData.getEventDataDetails().getOtherVehicleIdx());
+			log.debug("{} {} {}", name, nameOther, argPacketEventData);
+			log_penalty.info("{} {} {}", name, nameOther, argPacketEventData);
 
 			if (5 == argPacketEventData.getEventDataDetails().getPenaltyType()
 					&& (27 == argPacketEventData.getEventDataDetails().getInfringementType()
@@ -309,7 +313,9 @@ public class F1UdpListener extends Thread {
 	}
 
 	public void reRunFile(String argFileName) {
-		LogManager.shutdown();
+		if (!Boolean.parseBoolean(System.getProperty("data.reRunFile.log.enabled", "false"))) {
+			LogManager.shutdown();
+		}
 		F1DataHelper.readSingleSerFile(argFileName);
 	}
 }

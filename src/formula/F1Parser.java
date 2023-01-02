@@ -3,8 +3,14 @@
  */
 package formula;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 /**
  * @author reinh
@@ -44,20 +50,32 @@ public class F1Parser {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-
-		System.setProperty("log4j.configurationFile", "config/log4j2.xml");
+		Configurator.initialize(null, "config/log4j2.xml");
 
 		log.info("=============== START ===============");
+		Properties props = System.getProperties();
+
+		try (InputStream in = new FileInputStream("config/system.properties")) {
+			props.load(in);
+			props.putAll(System.getProperties());
+			System.setProperties(props);
+		} catch (IOException ex) {
+			log.error(ex);
+		}
+
 		listener = new F1UdpListener();
 		new F1Frame();
 
-		
-//		Thread.sleep(10000);
-		
-//		listener.reRunFile("c:/tmp/monza.ser");
-//		F1Parser.setWriteFile(true);
+		if (Boolean.parseBoolean((String) props.getOrDefault("data.reRunFile.enabled", "false"))) {
+			log.info("Rerun file={}", props.get("data.reRunFile.location"));
+			Thread.sleep(Integer.parseInt((String) props.get("data.reRunFile.wait")));
+			listener.reRunFile((String) props.get("data.reRunFile.location"));
+		} else {
+			F1Parser.setWriteFile(
+					Boolean.parseBoolean((String) props.getOrDefault("data.writeToFile.enabled", "false")));
 
-		listener.start();
-		
+			listener.start();
+		}
+
 	}
 }

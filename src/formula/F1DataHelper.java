@@ -65,16 +65,30 @@ public class F1DataHelper {
 	private static List<Float> driverDistanceTotal = new ArrayList<>(
 			Arrays.asList(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f));
 
+	private static int[] vehicleFrontwingChange = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 0 };
+
+	private static int[] vehiclePitStopTime = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0 };
+
 	private static short trackId = -1;
 	private static short trackLength = -1;
 
 	private static FileOutputStream fos = null;
 	private static ObjectOutputStream oos = null;
-	
+
 	private static String session = "";
 	private static String track = "";
 
 	private static final Logger log = LogManager.getLogger(F1DataHelper.class);
+
+	public static int[] getVehicleFrontwingChange() {
+		return vehicleFrontwingChange;
+	}
+
+	public static void setVehicleFrontwingChange(int[] argVehicleFrontwingChange) {
+		vehicleFrontwingChange = argVehicleFrontwingChange;
+	}
 
 	public static int[] getVehicleTrackWarnings() {
 		return vehicleTrackWarnings;
@@ -125,7 +139,7 @@ public class F1DataHelper {
 	}
 
 	public static String getNameForIdx(short argVehicleIdx) {
-		if (participants == null) {
+		if (participants == null || argVehicleIdx < 0 || argVehicleIdx > participants.getParticipantDataList().size()) {
 			return "";
 		}
 		return participants.getParticipantDataList().get(argVehicleIdx).getNameAsString();
@@ -200,7 +214,8 @@ public class F1DataHelper {
 			curSessionUUID = argSessionUUID;
 		}
 		if (fos == null)
-			fos = new FileOutputStream("c:/tmp/" + argSessionUUID + ".ser");
+			fos = new FileOutputStream(
+					System.getProperty("data.writeToFile.location") + File.separator + argSessionUUID + ".ser");
 		if (oos == null)
 			oos = new ObjectOutputStream(fos);
 
@@ -209,9 +224,11 @@ public class F1DataHelper {
 	}
 
 	protected static void renamefile(long argSessionUUID, String argTrackName, String argSessionName) {
-		Path source = Paths.get("c:/tmp/" + argSessionUUID + ".ser");
+		Path source = Paths
+				.get(System.getProperty("data.writeToFile.location") + File.separator + argSessionUUID + ".ser");
 		try {
-			Files.move(source, source.resolveSibling(argTrackName + "_" + argSessionName + "_" + argSessionUUID));
+			Files.move(source,
+					source.resolveSibling(argTrackName + "_" + argSessionName + "_" + argSessionUUID + ".ser"));
 		} catch (IOException e) {
 			log.error("Error renaming file", e);
 		}
@@ -411,7 +428,9 @@ public class F1DataHelper {
 				addNewLap(new DriverLapPosition(idx, lapData.getCurrentLapNum(), lapData.getCarPosition()));
 			}
 			float driverCurrTotal = driverDistanceTotal.get(idx);
-			if (driverCurrTotal <= lapData.getTotalDistance() && lapData.getResultStatus() != 3) {
+
+			if (driverCurrTotal <= lapData.getTotalDistance() && lapData.getResultStatus() != 3
+					&& getParticipants().getParticipantDataList().get(idx).getAiControlled() == 0) {
 				driverDistanceTotal.set(idx, lapData.getTotalDistance());
 			}
 
@@ -442,6 +461,11 @@ public class F1DataHelper {
 				Arrays.asList(0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f));
 	}
 
+	public static void resetPitStops() {
+		vehicleFrontwingChange = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		vehiclePitStopTime = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	}
+
 	public static void printLeadingLaps() {
 		log.info("Leading Laps");
 		for (List<DriverLapPosition> dlpList : dlpMap.values()) {
@@ -462,9 +486,19 @@ public class F1DataHelper {
 	public static void printTotalDrivenDistance() {
 		log.info("Distance Driven");
 		for (short i = 0; i < driverDistanceTotal.size(); i++) {
-			log.info("{}: {}m", F1DataHelper.getNameForIdx(i),
-					NumberFormat.getInstance(Locale.GERMAN).format(driverDistanceTotal.get(i)));
+			if (log.isInfoEnabled()) {
+				log.info("{}: {}m", F1DataHelper.getNameForIdx(i),
+						NumberFormat.getInstance(Locale.GERMAN).format(driverDistanceTotal.get(i)));
+			}
+		}
+	}
 
+	public static void printFrontWingChanges() {
+		log.info("Frontwing Changes");
+		for (short i = 0; i < vehicleFrontwingChange.length; i++) {
+			if (log.isInfoEnabled()) {
+				log.info("{}: {}", F1DataHelper.getNameForIdx(i), vehicleFrontwingChange[i]);
+			}
 		}
 	}
 
@@ -487,7 +521,7 @@ public class F1DataHelper {
 	static {
 		Properties props = System.getProperties();
 
-		try (InputStream in = new FileInputStream("config/players.properties")) {
+		try (InputStream in = new FileInputStream(props.getProperty("players.properties.path"))) {
 			props.load(in);
 			props.putAll(System.getProperties());
 			System.setProperties(props);
@@ -498,6 +532,31 @@ public class F1DataHelper {
 	}
 
 	private F1DataHelper() {
+
+	}
+
+	public static void checkPitstop(PacketLapData argPacketLapData) {
+		short idx = 0;
+		for (LapData lapData : argPacketLapData.getLapDataList()) {
+			String name = F1DataHelper.getNameForIdx(idx);
+//			if ("Verstappen".equalsIgnoreCase(name)) {
+//				System.out.println(name + " " + "pitTimerActive=" + lapData.getPitLaneTimerActive());
+//				System.out.println(name + " " + "pitStopTime=" + lapData.getPitStopTimerInMS());
+				if (lapData.getPitLaneTimerActive() == 0 && vehiclePitStopTime[idx] > 0) {
+					System.out.println("pitstop fertig");
+					if (vehiclePitStopTime[idx] > 5000) {
+						System.out.println("flügel hamma a tauscht");
+						vehicleFrontwingChange[idx]++;
+					}
+
+					vehiclePitStopTime[idx] = 0;
+				}
+				if (lapData.getPitLaneTimerActive() == 1) {
+					vehiclePitStopTime[idx] = lapData.getPitStopTimerInMS();
+				}
+//			}
+			idx++;
+		}
 
 	}
 

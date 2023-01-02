@@ -35,12 +35,13 @@
 		<copydir src="config" dest="${build}/config" />
 		
 		<manifest file="${build}/META-INF/MANIFEST.MF">
-			<attribute name="Class-Path" value="F1Parser.jar lib/log4j-core-2.19.0.jar lib/log4j-api-2.19.0.jar config/log4j2.xml" />
+			<attribute name="Class-Path" value="F1Parser.jar lib/log4j-core-2.19.0.jar lib/log4j-api-2.19.0.jar config config/log4j2.xml" />
 			<attribute name="Main-Class" value="formula.F1Parser" />
 		</manifest>
 		<jar manifest="${build}/META-INF/MANIFEST.MF" jarfile="${dist}/F1Parser.jar" basedir="${build}" />
 
 		<copydir src="lib" dest="${dist}/lib" />
+		<copydir src="${build}/config" dest="${dist}/config" />
 	</target>
 
 	<target name="zip" depends="dist" description="generate the distribution">
