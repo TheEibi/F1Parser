@@ -34,6 +34,8 @@ public class CarStatusData implements Serializable {
 	private short visualTyreCompound;
 	private short tyresAgeLaps;
 	private short vehicleFiaFlags;
+	private float enginePowerICE;
+	private float enginePowerMGUK;
 	private float ersStoreEnergy;
 	private short ersDeployMode;
 	private float ersHarvestedThisLapMGUK;
@@ -41,7 +43,7 @@ public class CarStatusData implements Serializable {
 	private float ersDeployedThisLap;
 	private short networkPaused;
 
-	public CarStatusData(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		tractionControl = argBb.get();
 		antiLockBrakes = argBb.get();
 		fuelMix = argBb.get();
@@ -66,6 +68,35 @@ public class CarStatusData implements Serializable {
 		ersDeployedThisLap = argBb.getFloat();
 		networkPaused = argBb.get();
 	}
+	
+	public void initV23(ByteBuffer argBb) {
+		tractionControl = argBb.get();
+		antiLockBrakes = argBb.get();
+		fuelMix = argBb.get();
+		frontBrakeBias = argBb.get();
+		pitLimitStatus = argBb.get();
+		fuelInTank = argBb.getFloat();
+		fuelCapacity = argBb.getFloat();
+		fuelRemainingLaps = argBb.getFloat();
+		maxRPM = argBb.getShort();
+		idleRPM = argBb.getShort();
+		maxGears = argBb.get();
+		drsAllowed = argBb.get();
+		drsActivationDistance = argBb.getShort();
+		actualTyreCompound = argBb.get();
+		visualTyreCompound = argBb.get();
+		tyresAgeLaps = argBb.get();
+		vehicleFiaFlags = argBb.get();
+		enginePowerICE = argBb.getFloat();
+		enginePowerMGUK = argBb.getFloat();
+		ersStoreEnergy = argBb.getFloat();
+		ersDeployMode = argBb.get();
+		ersHarvestedThisLapMGUK = argBb.getFloat();
+		ersHarvestedThisLapMGUH = argBb.getFloat();
+		ersDeployedThisLap = argBb.getFloat();
+		networkPaused = argBb.get();
+	}
+	
 
 	public short getTractionControl() {
 		return tractionControl;

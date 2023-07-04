@@ -13,7 +13,7 @@ public class MarshallZone implements Serializable {
 	private float zoneStart;
 	private short zoneFlag;
 
-	public MarshallZone(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		zoneStart = argBb.getFloat();
 		zoneFlag = argBb.get();
 	}

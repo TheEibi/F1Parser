@@ -22,13 +22,19 @@ public class PacketFinalClassification implements Serializable, IF1Packet {
 	private short numCars;
 	private List<FinalClassificationData> finalClassificationDataList;
 
-	public PacketFinalClassification(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		numCars = argBb.get();
 		finalClassificationDataList = new ArrayList<>();
 		for (int i = 0; i < 22; i++) {
-			finalClassificationDataList.add(new FinalClassificationData(argBb));
+			FinalClassificationData fcd = new FinalClassificationData();
+			fcd.initV22(argBb);
+			finalClassificationDataList.add(fcd);
 		}
+	}
+	
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		initV22(argPacketHeader, argBb);
 	}
 
 	public PacketHeader getPacketHeader() {

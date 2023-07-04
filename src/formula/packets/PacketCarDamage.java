@@ -19,14 +19,21 @@ public class PacketCarDamage implements Serializable, IF1Packet {
 	private PacketHeader packetHeader;
 	private List<CarDamageData> carDamageDataList;
 
-	public PacketCarDamage(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		carDamageDataList = new ArrayList<>();
 
 		for (int i = 0; i < 22; i++) {
-			carDamageDataList.add(new CarDamageData(argBb));
+			CarDamageData cdd = new CarDamageData();
+			cdd.initV22(argBb);
+			carDamageDataList.add(cdd);
 		}
 
+	}
+	
+	@Override
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		initV22(argPacketHeader, argBb);
 	}
 
 	public PacketHeader getPacketHeader() {

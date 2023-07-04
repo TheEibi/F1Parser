@@ -15,13 +15,20 @@ public class PacketLobbyInfo implements Serializable, IF1Packet {
 	private short numPlayers;
 	private List<LobbyInfoData> lobbyInfoDataList;
 
-	public PacketLobbyInfo(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		numPlayers = argBb.get();
 		lobbyInfoDataList = new ArrayList<>();
 		for (int i = 0; i < 22; i++) {
-			lobbyInfoDataList.add(new LobbyInfoData(argBb));
+			LobbyInfoData lid = new LobbyInfoData();
+			lid.initV22(argBb);
+			lobbyInfoDataList.add(lid);
 		}
+	}
+	
+	@Override
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		initV22(argPacketHeader, argBb);	
 	}
 
 	public PacketHeader getPacketHeader() {

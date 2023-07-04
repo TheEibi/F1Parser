@@ -22,7 +22,7 @@ public class PacketParticipants implements Serializable, IF1Packet {
 	private short numActiveCars;
 	private List<ParticipantData> participantDataList;
 
-	public PacketParticipants(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 
 		numActiveCars = argBb.get();
@@ -30,9 +30,24 @@ public class PacketParticipants implements Serializable, IF1Packet {
 		participantDataList = new ArrayList<>();
 
 		for (int i = 0; i < 22; i++) {
-			participantDataList.add(new ParticipantData(argBb));
+			ParticipantData pc = new ParticipantData();
+			pc.initV22(argBb);
+			participantDataList.add(pc);
 		}
+	}
+	
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		packetHeader = argPacketHeader;
 
+		numActiveCars = argBb.get();
+
+		participantDataList = new ArrayList<>();
+
+		for (int i = 0; i < 22; i++) {
+			ParticipantData pc = new ParticipantData();
+			pc.initV23(argBb);
+			participantDataList.add(pc);
+		}
 	}
 
 	public PacketHeader getPacketHeader() {

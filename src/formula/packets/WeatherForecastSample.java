@@ -19,7 +19,7 @@ public class WeatherForecastSample  implements Serializable {
 	private short airTemperatureChange;
 	private short rainPercentage;
 
-	public WeatherForecastSample(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		sessionType = argBb.get();
 		timeOffset = argBb.get();
 		weather = argBb.get();
@@ -71,15 +71,15 @@ public class WeatherForecastSample  implements Serializable {
 		sb.append("::");
 		sb.append(getTimeOffset());
 		sb.append("::");
-		sb.append(SessionConstants.SESSION_TYPE.get(getWeather()));
+		sb.append(SessionConstants.WEATHER.get(getWeather()));
 		sb.append("::");
 		sb.append(getTrackTemperature());
 		sb.append("::");
-		sb.append(SessionConstants.SESSION_TYPE.get(getTrackTemperatureChange()));
+		sb.append(SessionConstants.TRACK_TEMPERATURE_CHANGE.get(getTrackTemperatureChange()));
 		sb.append("::");
 		sb.append(getAirTemperature());
 		sb.append("::");
-		sb.append(SessionConstants.SESSION_TYPE.get(getAirTemperatureChange()));
+		sb.append(SessionConstants.AIR_TEMPERATURE_CHANGE.get(getAirTemperatureChange()));
 		sb.append("::");
 		sb.append(getRainPercentage());
 		return sb.toString();

@@ -19,14 +19,27 @@ public class PacketCarStatus implements Serializable, IF1Packet {
 	private PacketHeader packetHeader;
 	private List<CarStatusData> carStatusDataList;
 
-	public PacketCarStatus(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		carStatusDataList = new ArrayList<>();
 
 		for (int i = 0; i < 22; i++) {
-			carStatusDataList.add(new CarStatusData(argBb));
+			CarStatusData csd = new CarStatusData();
+			csd.initV22(argBb);
+			carStatusDataList.add(csd);
 		}
+	}
+	
+	@Override
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		packetHeader = argPacketHeader;
+		carStatusDataList = new ArrayList<>();
 
+		for (int i = 0; i < 22; i++) {
+			CarStatusData csd = new CarStatusData();
+			csd.initV23(argBb);
+			carStatusDataList.add(csd);
+		}
 	}
 
 	public PacketHeader getPacketHeader() {
@@ -51,5 +64,7 @@ public class PacketCarStatus implements Serializable, IF1Packet {
 		return sb.toString();
 
 	}
+
+
 
 }

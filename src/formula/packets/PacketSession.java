@@ -69,8 +69,15 @@ public class PacketSession implements Serializable, IF1Packet {
 	private short ruleSet;
 	private int timeOfDay;
 	private short sessionLength;
+	private short speedUnitsLeadPlayer;
+	private short temperatureUnitsLeadPlayer;
+	private short speedUnitsSecondaryPlayer;
+	private short temperatureUnitsSecondaryPlayer;
+	private short numSafetyCarPeriods;
+	private short numVirtualSafetyCarPeriods;
+	private short numRedFlagPeriods;
 
-	public PacketSession(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		weather = argBb.get();
 		trackTemperature = argBb.get();
@@ -90,14 +97,18 @@ public class PacketSession implements Serializable, IF1Packet {
 		numMarshalZones = argBb.get();
 		marshallZoneList = new ArrayList<>();
 		for (short i = 21; i > 0; i--) {
-			marshallZoneList.add(new MarshallZone(argBb));
+			MarshallZone mz = new MarshallZone();
+			mz.initV22(argBb);
+			marshallZoneList.add(mz);
 		}
 		safetyCarStatus = argBb.get();
 		networkGame = argBb.get();
 		numWeatherForecastSamples = argBb.get();
 		weatherForecastSampleList = new ArrayList<>();
 		for (short i = 56; i > 0; i--) {
-			weatherForecastSampleList.add(new WeatherForecastSample(argBb));
+			WeatherForecastSample wfs = new WeatherForecastSample();
+			wfs.initV22(argBb);
+			weatherForecastSampleList.add(wfs);
 		}
 		forecastAccuracy = argBb.get();
 		aiDifficulty = argBb.get();
@@ -120,6 +131,69 @@ public class PacketSession implements Serializable, IF1Packet {
 		ruleSet = argBb.get();
 		timeOfDay = argBb.getInt();
 		sessionLength = argBb.get();
+	}
+
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		packetHeader = argPacketHeader;
+		weather = argBb.get();
+		trackTemperature = argBb.get();
+		airTemperature = argBb.get();
+		totalLaps = argBb.get();
+		trackLength = argBb.getShort();
+		sessionType = argBb.get();
+		trackId = argBb.get();
+		formula = argBb.get();
+		sessionTimeLeft = argBb.getShort();
+		sessionDuration = argBb.getShort();
+		pitSpeedLimit = argBb.get();
+		gamePaused = argBb.get();
+		isSpectating = argBb.get();
+		spectatorCardIndex = argBb.get();
+		sliProNativeSupport = argBb.get();
+		numMarshalZones = argBb.get();
+		marshallZoneList = new ArrayList<>();
+		for (short i = 21; i > 0; i--) {
+			MarshallZone mz = new MarshallZone();
+			mz.initV22(argBb);
+			marshallZoneList.add(mz);
+		}
+		safetyCarStatus = argBb.get();
+		networkGame = argBb.get();
+		numWeatherForecastSamples = argBb.get();
+		weatherForecastSampleList = new ArrayList<>();
+		for (short i = 56; i > 0; i--) {
+			WeatherForecastSample wfs = new WeatherForecastSample();
+			wfs.initV22(argBb);
+			weatherForecastSampleList.add(wfs);
+		}
+		forecastAccuracy = argBb.get();
+		aiDifficulty = argBb.get();
+		seasonLinkIdentifier = argBb.getInt();
+		weekendLinkIdentifier = argBb.getInt();
+		sessionLinkIdentifier = argBb.getInt();
+		pitStopWindowIdealLap = argBb.get();
+		pitStopWindowLatestLap = argBb.get();
+		pitStopRejoinPosition = argBb.get();
+		steeringAssist = argBb.get();
+		brakingAssist = argBb.get();
+		gearboxAssist = argBb.get();
+		pitAssist = argBb.get();
+		pitReleaseAssist = argBb.get();
+		ersAssist = argBb.get();
+		drsAssist = argBb.get();
+		dynamicRacingLine = argBb.get();
+		dynamicRacingLineType = argBb.get();
+		gameMode = argBb.get();
+		ruleSet = argBb.get();
+		timeOfDay = argBb.getInt();
+		sessionLength = argBb.get();
+		speedUnitsLeadPlayer = argBb.get();
+		temperatureUnitsLeadPlayer = argBb.get();
+		speedUnitsSecondaryPlayer = argBb.get();
+		temperatureUnitsSecondaryPlayer = argBb.get();
+		numSafetyCarPeriods = argBb.get();
+		numVirtualSafetyCarPeriods = argBb.get();
+		numRedFlagPeriods = argBb.get();
 	}
 
 	public PacketHeader getPacketHeader() {
@@ -304,6 +378,34 @@ public class PacketSession implements Serializable, IF1Packet {
 		return sdf.format(c.getTime());
 	}
 
+	public short getSpeedUnitsLeadPlayer() {
+		return speedUnitsLeadPlayer;
+	}
+
+	public short getTemperatureUnitsLeadPlayer() {
+		return temperatureUnitsLeadPlayer;
+	}
+
+	public short getSpeedUnitsSecondaryPlayer() {
+		return speedUnitsSecondaryPlayer;
+	}
+
+	public short getTemperatureUnitsSecondaryPlayer() {
+		return temperatureUnitsSecondaryPlayer;
+	}
+
+	public short getNumSafetyCarPeriods() {
+		return numSafetyCarPeriods;
+	}
+
+	public short getNumVirtualSafetyCarPeriods() {
+		return numVirtualSafetyCarPeriods;
+	}
+
+	public short getNumRedFlagPeriods() {
+		return numRedFlagPeriods;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -400,6 +502,20 @@ public class PacketSession implements Serializable, IF1Packet {
 		sb.append(getTimeOfDayCalculated());
 		sb.append("::");
 		sb.append(SessionConstants.SESSION_LENGTH.get(getSessionLength()));
+		sb.append("::");
+		sb.append(getSpeedUnitsLeadPlayer());
+		sb.append("::");
+		sb.append(getTemperatureUnitsLeadPlayer());
+		sb.append("::");
+		sb.append(getSpeedUnitsSecondaryPlayer());
+		sb.append("::");
+		sb.append(getTemperatureUnitsSecondaryPlayer());
+		sb.append("::");
+		sb.append(getNumSafetyCarPeriods());
+		sb.append("::");
+		sb.append(getNumVirtualSafetyCarPeriods());
+		sb.append("::");
+		sb.append(getNumRedFlagPeriods());
 		return sb.toString();
 	}
 

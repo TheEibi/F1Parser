@@ -37,8 +37,8 @@ public class CarDamageData implements Serializable {
 	private short engineTCWear;
 	private short engineBlown;
 	private short engineSeized;
-
-	public CarDamageData(ByteBuffer argBb) {
+	
+	public void initV22(ByteBuffer argBb) {
 		for (int i = 0; i < 4; i++) {
 			tyresWear[i] = argBb.getFloat();
 		}
@@ -65,7 +65,7 @@ public class CarDamageData implements Serializable {
 		engineMGUKWear = argBb.get();
 		engineTCWear = argBb.get();
 		engineBlown = argBb.get();
-		engineSeized = argBb.get();
+		engineSeized = argBb.get();		
 	}
 
 	public float[] getTyresWear() {

@@ -40,7 +40,7 @@ public class EventDataDetails implements Serializable {
 	private float speed;
 	private short isOverallFastestInSession;
 	private short isDriverFastestInSession;
-	private short fastesVehicleIdxInSession;
+	private short fastestVehicleIdxInSession;
 	private float fastestSpeedInSession;
 
 	// LGOT
@@ -52,8 +52,12 @@ public class EventDataDetails implements Serializable {
 
 	// BUTN
 	private int buttonStatus;
+	
+	// OVTK
+	private short overtakingVehicleIdx;
+	private short beingOvertakenVehicleIdx;
 
-	public EventDataDetails(ByteBuffer argBb, String argEventType) {
+	public void initV22(ByteBuffer argBb, String argEventType) {
 		bb = argBb;
 		eventType = argEventType;
 	}
@@ -111,7 +115,7 @@ public class EventDataDetails implements Serializable {
 	}
 
 	public short getFastesVehicleIdxInSession() {
-		return fastesVehicleIdxInSession;
+		return fastestVehicleIdxInSession;
 	}
 
 	public float getFastestSpeedInSession() {
@@ -181,7 +185,7 @@ public class EventDataDetails implements Serializable {
 		speed = bb.getFloat();
 		isOverallFastestInSession = bb.get();
 		isDriverFastestInSession = bb.get();
-		fastesVehicleIdxInSession = bb.get();
+		fastestVehicleIdxInSession = bb.get();
 		fastestSpeedInSession = bb.getFloat();
 	}
 
@@ -210,6 +214,14 @@ public class EventDataDetails implements Serializable {
 		buttonStatus = bb.getInt();
 	}
 
+	public void parseOVTK23() {
+		overtakingVehicleIdx = bb.get();
+		beingOvertakenVehicleIdx = bb.get();
+	}
+	
+	public void parseRDFL23() {
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -275,7 +287,7 @@ public class EventDataDetails implements Serializable {
 			sb.append("::");
 			sb.append(Byte.toUnsignedInt((byte) isDriverFastestInSession));
 			sb.append("::");
-			sb.append(Byte.toUnsignedInt((byte) fastesVehicleIdxInSession));
+			sb.append(Byte.toUnsignedInt((byte) fastestVehicleIdxInSession));
 			sb.append("::");
 			sb.append(fastestSpeedInSession);
 			break;
@@ -304,6 +316,15 @@ public class EventDataDetails implements Serializable {
 		case "BUTN":
 			// Button status changed
 			sb.append(buttonStatus);
+			break;
+		case "RDFL":
+			// Red flag shown
+			break;
+		case "OVTK":
+			// Overtake occured
+			sb.append(overtakingVehicleIdx);
+			sb.append("::");
+			sb.append(beingOvertakenVehicleIdx);
 			break;
 		default:
 			break;

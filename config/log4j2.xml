@@ -5,8 +5,16 @@
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
 			<OnStartupTriggeringPolicy />
 		</RollingFile>
-				<RollingFile name="penaltyLog" fileName="logs/penalty.log" filePattern="logs/penalty.log-%d{yyyy-MM-dd}-%i">
+		<RollingFile name="penaltyLog" fileName="logs/penalty.log" filePattern="logs/penalty.log-%d{yyyy-MM-dd}-%i">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
+			<OnStartupTriggeringPolicy />
+		</RollingFile>
+		<RollingFile name="weatherLog" fileName="logs/weather.log" filePattern="logs/weather.log-%d{yyyy-MM-dd}-%i">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %msg :: %logger{36}%n" />
+			<OnStartupTriggeringPolicy />
+		</RollingFile>
+		<RollingFile name="stisticsLog" fileName="logs/statistics.log" filePattern="logs/statistics.log-%d{yyyy-MM-dd}-%i">
+			<PatternLayout pattern="%msg%n" />
 			<OnStartupTriggeringPolicy />
 		</RollingFile>
 		<Console name="Console" target="SYSTEM_OUT">
@@ -14,11 +22,19 @@
 		</Console>
 	</Appenders>
 	<Loggers>
-		<Logger name="formula" level="debug" additivity="false">
+		<Logger name="formula" level="info" additivity="false">
 			<AppenderRef ref="parserLog" />
 		</Logger>
 		<Logger name="PENALTY_LOGGER" level="info" additivity="false">
 			<AppenderRef ref="penaltyLog" />
+			<AppenderRef ref="Console" />
+		</Logger>
+		<Logger name="STATS_LOGGER" level="info" additivity="false">
+			<AppenderRef ref="stisticsLog" />
+			<AppenderRef ref="Console" />
+		</Logger>
+		<Logger name="WEATHER_LOGGER" level="info" additivity="false">
+			<AppenderRef ref="weatherLog" />
 			<AppenderRef ref="Console" />
 		</Logger>
 		<Root level="debug">

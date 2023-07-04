@@ -30,8 +30,10 @@ public class ParticipantData implements Serializable {
 	private short nationality;
 	private byte[] name = new byte[48];
 	private short yourTelemetry;
+	private short showOnlineNames;
+	private short platform;
 
-	public ParticipantData(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		aiControlled = argBb.get();
 		driverId = argBb.get();
 		networkId = argBb.get();
@@ -43,6 +45,22 @@ public class ParticipantData implements Serializable {
 			name[i] = argBb.get();
 		}
 		yourTelemetry = argBb.get();
+	}
+	
+	public void initV23(ByteBuffer argBb) {
+		aiControlled = argBb.get();
+		driverId = argBb.get();
+		networkId = argBb.get();
+		teamId = argBb.get();
+		myTeam = argBb.get();
+		raceNumber = argBb.get();
+		nationality = argBb.get();
+		for (int i = 0; i < 48; i++) {
+			name[i] = argBb.get();
+		}
+		yourTelemetry = argBb.get();
+		showOnlineNames = argBb.get();
+		platform = argBb.get();
 	}
 
 	public short getAiControlled() {
@@ -80,6 +98,14 @@ public class ParticipantData implements Serializable {
 	public short getYourTelemetry() {
 		return yourTelemetry;
 	}
+	
+	public short getShowOnlineNames() {
+		return showOnlineNames;
+	}
+	
+	public short getPlatform() {
+		return platform;
+	}
 
 	public String getNameAsString() {
 		String tmpName = new String(getName(), StandardCharsets.UTF_8).trim();
@@ -110,7 +136,15 @@ public class ParticipantData implements Serializable {
 		sb.append("::");
 		sb.append(getNameAsString());
 		sb.append("::");
+		sb.append(getShowOnlineNames());
+		sb.append("::");
+		sb.append(getPlatform());
+		sb.append("::");
 		sb.append(Byte.toUnsignedInt((byte) getYourTelemetry()));
+		sb.append("::");
+		sb.append(getShowOnlineNames());
+		sb.append("::");
+		sb.append(getPlatform());
 		return sb.toString();
 	}
 

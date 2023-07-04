@@ -20,7 +20,7 @@ public class LobbyInfoData implements Serializable {
 	private short carNumber;
 	private short readyStatus;
 
-	public LobbyInfoData(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		aiControlled = argBb.get();
 		teamId = argBb.get();
 		nationality = argBb.get();

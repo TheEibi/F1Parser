@@ -81,6 +81,7 @@ public class F1DataHelper {
 	private static String track = "";
 
 	private static final Logger log = LogManager.getLogger(F1DataHelper.class);
+	private static final Logger log_stats = LogManager.getLogger("STATS_LOGGER");
 
 	public static int[] getVehicleFrontwingChange() {
 		return vehicleFrontwingChange;
@@ -423,18 +424,20 @@ public class F1DataHelper {
 
 	public static void createDriverLapPosition(PacketLapData argPacketLapData) {
 		short idx = 0;
-		for (LapData lapData : argPacketLapData.getLapDataList()) {
-			if (lapData.getCurrentLapNum() > getLastLapNumberPerDriver(idx)) {
-				addNewLap(new DriverLapPosition(idx, lapData.getCurrentLapNum(), lapData.getCarPosition()));
-			}
-			float driverCurrTotal = driverDistanceTotal.get(idx);
+		if (getParticipants() != null) {
+			for (LapData lapData : argPacketLapData.getLapDataList()) {
+				if (lapData.getCurrentLapNum() > getLastLapNumberPerDriver(idx)) {
+					addNewLap(new DriverLapPosition(idx, lapData.getCurrentLapNum(), lapData.getCarPosition()));
+				}
+				float driverCurrTotal = driverDistanceTotal.get(idx);
 
-			if (driverCurrTotal <= lapData.getTotalDistance() && lapData.getResultStatus() != 3
-					&& getParticipants().getParticipantDataList().get(idx).getAiControlled() == 0) {
-				driverDistanceTotal.set(idx, lapData.getTotalDistance());
-			}
+				if (driverCurrTotal <= lapData.getTotalDistance() && lapData.getResultStatus() != 3
+						&& getParticipants().getParticipantDataList().get(idx).getAiControlled() == 0) {
+					driverDistanceTotal.set(idx, lapData.getTotalDistance());
+				}
 
-			idx++;
+				idx++;
+			}
 		}
 	}
 
@@ -467,7 +470,13 @@ public class F1DataHelper {
 	}
 
 	public static void printLeadingLaps() {
+		log.info("{}: {}m", TrackConstants.TRACK.get(F1DataHelper.getTrackId()), F1DataHelper.getTrackLength());
+
+		log_stats.info("{}: {}m", TrackConstants.TRACK.get(F1DataHelper.getTrackId()), F1DataHelper.getTrackLength());
 		log.info("Leading Laps");
+		log_stats.info("*****************************");
+		log_stats.info("*       Leading Laps        *");
+		log_stats.info("*****************************");
 		for (List<DriverLapPosition> dlpList : dlpMap.values()) {
 			short vehicleIdx = 0;
 			int leadcount = 0;
@@ -479,15 +488,21 @@ public class F1DataHelper {
 			}
 			if (leadcount > 0) {
 				log.info("{}: {}", F1DataHelper.getNameForIdx(vehicleIdx), leadcount);
+				log_stats.info("{}: {}", F1DataHelper.getNameForIdx(vehicleIdx), leadcount);
 			}
 		}
 	}
 
 	public static void printTotalDrivenDistance() {
 		log.info("Distance Driven");
+		log_stats.info("*****************************");
+		log_stats.info("*      Distance Driven      *");
+		log_stats.info("*****************************");
 		for (short i = 0; i < driverDistanceTotal.size(); i++) {
 			if (log.isInfoEnabled()) {
 				log.info("{}: {}m", F1DataHelper.getNameForIdx(i),
+						NumberFormat.getInstance(Locale.GERMAN).format(driverDistanceTotal.get(i)));
+				log_stats.info("{}: {}m", F1DataHelper.getNameForIdx(i),
 						NumberFormat.getInstance(Locale.GERMAN).format(driverDistanceTotal.get(i)));
 			}
 		}
@@ -495,9 +510,13 @@ public class F1DataHelper {
 
 	public static void printFrontWingChanges() {
 		log.info("Frontwing Changes");
+		log_stats.info("*****************************");
+		log_stats.info("*     Frontwing Changes     *");
+		log_stats.info("*****************************");
 		for (short i = 0; i < vehicleFrontwingChange.length; i++) {
-			if (log.isInfoEnabled()) {
+			if (vehicleFrontwingChange[i] > 0) {
 				log.info("{}: {}", F1DataHelper.getNameForIdx(i), vehicleFrontwingChange[i]);
+				log_stats.info("{}: {}", F1DataHelper.getNameForIdx(i), vehicleFrontwingChange[i]);
 			}
 		}
 	}
@@ -539,25 +558,20 @@ public class F1DataHelper {
 		short idx = 0;
 		for (LapData lapData : argPacketLapData.getLapDataList()) {
 			String name = F1DataHelper.getNameForIdx(idx);
-//			if ("Verstappen".equalsIgnoreCase(name)) {
-//				System.out.println(name + " " + "pitTimerActive=" + lapData.getPitLaneTimerActive());
-//				System.out.println(name + " " + "pitStopTime=" + lapData.getPitStopTimerInMS());
-				if (lapData.getPitLaneTimerActive() == 0 && vehiclePitStopTime[idx] > 0) {
-					System.out.println("pitstop fertig");
-					if (vehiclePitStopTime[idx] > 5000) {
-						System.out.println("flügel hamma a tauscht");
-						vehicleFrontwingChange[idx]++;
-					}
 
-					vehiclePitStopTime[idx] = 0;
+			if (lapData.getPitLaneTimerActive() == 0 && vehiclePitStopTime[idx] > 0) {
+				System.out.println(name + " - pitstop fertig");
+				if (vehiclePitStopTime[idx] > 5000) {
+					System.out.println("flügel hamma a tauscht");
+					vehicleFrontwingChange[idx]++;
 				}
-				if (lapData.getPitLaneTimerActive() == 1) {
-					vehiclePitStopTime[idx] = lapData.getPitStopTimerInMS();
-				}
-//			}
+
+				vehiclePitStopTime[idx] = 0;
+			}
+			if (lapData.getPitLaneTimerActive() == 1) {
+				vehiclePitStopTime[idx] = lapData.getPitStopTimerInMS();
+			}
 			idx++;
 		}
-
 	}
-
 }

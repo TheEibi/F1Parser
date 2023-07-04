@@ -23,12 +23,27 @@ public class PacketLapData implements Serializable, IF1Packet {
 	private short timeTrialPBCarIdx;
 	private short timeTrialRivalCarIdx;
 
-	public PacketLapData(PacketHeader argPacketHeader, ByteBuffer argBb) {
+	public void initV22(PacketHeader argPacketHeader, ByteBuffer argBb) {
 		packetHeader = argPacketHeader;
 		lapDataList = new ArrayList<>();
 
 		for (int i = 0; i < 22; i++) {
-			lapDataList.add(new LapData(argBb));
+			LapData ld = new LapData();
+			ld.initV22(argBb);
+			lapDataList.add(ld);
+		}
+		timeTrialPBCarIdx = argBb.get();
+		timeTrialRivalCarIdx = argBb.get();
+	}
+	
+	public void initV23(PacketHeader argPacketHeader, ByteBuffer argBb) {
+		packetHeader = argPacketHeader;
+		lapDataList = new ArrayList<>();
+
+		for (int i = 0; i < 22; i++) {
+			LapData ld = new LapData();
+			ld.initV23(argBb);
+			lapDataList.add(ld);
 		}
 		timeTrialPBCarIdx = argBb.get();
 		timeTrialRivalCarIdx = argBb.get();

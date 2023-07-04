@@ -6,7 +6,7 @@ package formula;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -15,10 +15,18 @@ import java.util.Arrays;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import formula.constants.TrackConstants;
-import formula.packets.CarStatusData;
+import formula.handler.CarDamageHandler;
+import formula.handler.CarMotionHandler;
+import formula.handler.CarStatusHandler;
+import formula.handler.EventDataHandler;
+import formula.handler.FinalClassificationHandler;
+import formula.handler.LapDataHandler;
+import formula.handler.LobbyInfoHandler;
+import formula.handler.ParticipantsHandler;
+import formula.handler.SessionHandler;
 import formula.packets.IF1Packet;
 import formula.packets.PacketCarDamage;
+import formula.packets.PacketCarMotion;
 import formula.packets.PacketCarStatus;
 import formula.packets.PacketEventData;
 import formula.packets.PacketFinalClassification;
@@ -35,17 +43,20 @@ import formula.packets.PacketSession;
 public class F1UdpListener extends Thread {
 
 	private static final Logger log = LogManager.getLogger(F1UdpListener.class);
-	private static final Logger log_penalty = LogManager.getLogger("PENALTY_LOGGER");
 
-	private DatagramSocket socket;
+	private DatagramSocket listenSocket;
+	private MulticastSocket sendSocket;
 
 	private boolean running = true;
 
 	public F1UdpListener() {
 		try {
-			socket = new DatagramSocket(20777);
-			socket.setSoTimeout(100);
-		} catch (SocketException e) {
+			listenSocket = new DatagramSocket(Integer.parseInt(System.getProperty("listen.port", "20777")));
+			listenSocket.setSoTimeout(100);
+//			sendSocket = new MulticastSocket(Integer.parseInt(System.getProperty("send.port", "54321")));
+//			sendSocket.setSoTimeout(100);
+		} catch (IOException | NumberFormatException e) {
+			System.out.println(e);
 			log.error(e);
 		}
 	}
@@ -55,7 +66,13 @@ public class F1UdpListener extends Thread {
 
 		while (running) {
 			try {
-				listen();
+				byte[] data = listen();
+				IF1Packet packet = parseData(data);
+				handlePacket(packet);
+//				if (Boolean.parseBoolean(System.getProperty("send.enabled", "false"))) {
+//					send(data);
+//				}
+
 			} catch (IOException e) {
 				log.error(e);
 			}
@@ -66,54 +83,84 @@ public class F1UdpListener extends Thread {
 		System.exit(0);
 	}
 
+//	private void send(byte[] argData) throws IOException {
+//		sendSocket.setBroadcast(true);
+//		DatagramPacket packet = new DatagramPacket(argData, argData.length, InetAddress.getByName("127.0.0.1"),
+//				Integer.parseInt(System.getProperty("send.port", "54321")));
+//		sendSocket.send(packet);
+//		sendSocket.close();
+
+//	}
+
 	public void setRunning(boolean argRunning) {
 		running = argRunning;
 		interrupt();
 	}
 
-	public void listen() throws IOException {
+	public byte[] listen() throws IOException {
 
 		byte[] buf = new byte[10000];
 
 		DatagramPacket rawPacket = new DatagramPacket(buf, buf.length);
 
 		try {
-			socket.receive(rawPacket);
+			listenSocket.receive(rawPacket);
 
 		} catch (SocketTimeoutException e) {
 			log.trace(e);
 		}
 		byte[] data = Arrays.copyOf(rawPacket.getData(), rawPacket.getLength());
-		parseData(data);
+
+		return data;
 	}
 
-	private void parseData(byte[] data) {
+	public IF1Packet parseData(byte[] data) {
 		ByteBuffer bb = ByteBuffer.wrap(data);
 		bb = bb.order(ByteOrder.LITTLE_ENDIAN);
 
-		PacketHeader ph = new PacketHeader(bb);
+		short gameVersion = getGameVersion(bb);
+		bb.rewind();
+
+		PacketHeader ph = new PacketHeader(gameVersion);
+
+		if (gameVersion == 2022) {
+			return parseV22(bb, ph);
+		} else if (gameVersion == 2023) {
+			return parseV23(bb, ph);
+		}
+		return null;
+	}
+
+	private IF1Packet parseV22(ByteBuffer bb, PacketHeader ph) {
+		ph.initV22(bb);
 
 		IF1Packet packet = null;
 
 		switch (ph.getPacketId()) {
 		case 0:
+			packet = new PacketCarMotion();
+			packet.initV22(ph, bb);
 			// motion
 			break;
 		case 1:
 			// session
-			packet = new PacketSession(ph, bb);
+			packet = new PacketSession();
+			packet.initV22(ph, bb);
 			break;
 		case 2:
 			// lap data
-			packet = new PacketLapData(ph, bb);
+			packet = new PacketLapData();
+			packet.initV22(ph, bb);
 			break;
 		case 3:
 			// event
-			packet = new PacketEventData(ph, bb);
+			packet = new PacketEventData();
+			packet.initV22(ph, bb);
 			break;
 		case 4:
 			// participants
-			packet = new PacketParticipants(ph, bb);
+			packet = new PacketParticipants();
+			packet.initV22(ph, bb);
 			break;
 		case 5:
 			// car setups
@@ -123,19 +170,23 @@ public class F1UdpListener extends Thread {
 			break;
 		case 7:
 			// car status
-			packet = new PacketCarStatus(ph, bb);
+			packet = new PacketCarStatus();
+			packet.initV22(ph, bb);
 			break;
 		case 8:
 			// final classification
-			packet = new PacketFinalClassification(ph, bb);
+			packet = new PacketFinalClassification();
+			packet.initV22(ph, bb);
 			break;
 		case 9:
 			// lobby info
-			packet = new PacketLobbyInfo(ph, bb);
+			packet = new PacketLobbyInfo();
+			packet.initV22(ph, bb);
 			break;
 		case 10:
 			// car damage
-			packet = new PacketCarDamage(ph, bb);
+			packet = new PacketCarDamage();
+			packet.initV22(ph, bb);
 			break;
 		case 11:
 			// session history
@@ -144,29 +195,96 @@ public class F1UdpListener extends Thread {
 			break;
 		}
 
-		handlePacket(packet);
+		return packet;
+	}
 
+	private IF1Packet parseV23(ByteBuffer bb, PacketHeader ph) {
+		ph.initV23(bb);
+
+		IF1Packet packet = null;
+		switch (ph.getPacketId()) {
+		case 0:
+			packet = new PacketCarMotion();
+			packet.initV23(ph, bb);
+			// motion
+			break;
+		case 1:
+			// session
+			packet = new PacketSession();
+			packet.initV23(ph, bb);
+			break;
+		case 2:
+			// lap data
+			packet = new PacketLapData();
+			packet.initV23(ph, bb);
+			break;
+		case 3:
+			// event
+			packet = new PacketEventData();
+			packet.initV23(ph, bb);
+			break;
+		case 4:
+			// participants
+			packet = new PacketParticipants();
+			packet.initV23(ph, bb);
+			break;
+		case 5:
+			// car setups
+			break;
+		case 6:
+			// car telemetry
+			break;
+		case 7:
+			// car status
+			packet = new PacketCarStatus();
+			packet.initV23(ph, bb);
+			break;
+		case 8:
+			// final classification
+			packet = new PacketFinalClassification();
+			packet.initV23(ph, bb);
+			break;
+		case 9:
+			// lobby info
+			packet = new PacketLobbyInfo();
+			packet.initV23(ph, bb);
+			break;
+		case 10:
+			// car damage
+			packet = new PacketCarDamage();
+			packet.initV23(ph, bb);
+			break;
+		case 11:
+			// session history
+			break;
+		default:
+			break;
+		}
+
+		return packet;
 	}
 
 	public static void handlePacket(IF1Packet argF1Packet) {
 		if (argF1Packet != null) {
 
 			if (argF1Packet instanceof PacketSession) {
-				handleSession((PacketSession) argF1Packet);
+				SessionHandler.handleSession((PacketSession) argF1Packet);
 			} else if (argF1Packet instanceof PacketLapData) {
-				handleLapData((PacketLapData) argF1Packet);
+				LapDataHandler.handleLapData((PacketLapData) argF1Packet);
 			} else if (argF1Packet instanceof PacketEventData) {
-				handleEventData((PacketEventData) argF1Packet);
+				EventDataHandler.handleEventData((PacketEventData) argF1Packet);
 			} else if (argF1Packet instanceof PacketParticipants) {
-				handleParticipants((PacketParticipants) argF1Packet);
+				ParticipantsHandler.handleParticipants((PacketParticipants) argF1Packet);
 			} else if (argF1Packet instanceof PacketCarStatus) {
-				handleCarStatus((PacketCarStatus) argF1Packet);
+				CarStatusHandler.handleCarStatus((PacketCarStatus) argF1Packet);
 			} else if (argF1Packet instanceof PacketFinalClassification) {
-				handleFinalClassification((PacketFinalClassification) argF1Packet);
+				FinalClassificationHandler.handleFinalClassification((PacketFinalClassification) argF1Packet);
 			} else if (argF1Packet instanceof PacketLobbyInfo) {
-				handleLobbyInfo((PacketLobbyInfo) argF1Packet);
+				LobbyInfoHandler.handleLobbyInfo((PacketLobbyInfo) argF1Packet);
 			} else if (argF1Packet instanceof PacketCarDamage) {
-				handleCarDamage((PacketCarDamage) argF1Packet);
+				CarDamageHandler.handleCarDamage((PacketCarDamage) argF1Packet);
+			} else if (argF1Packet instanceof PacketCarMotion) {
+				CarMotionHandler.handleCarMotion((PacketCarMotion) argF1Packet);
 			}
 
 			if (F1Parser.isWriteFile()) {
@@ -179,137 +297,8 @@ public class F1UdpListener extends Thread {
 		}
 	}
 
-	private static void handleSession(PacketSession argPacketSession) {
-		F1DataHelper.setTrackId(argPacketSession.getTrackId());
-		F1DataHelper.setTrackLength(argPacketSession.getTrackLength());
-		F1Frame.drawSafetyCarStatus(argPacketSession);
-		log.debug(argPacketSession);
-	}
-
-	private static void handleLapData(PacketLapData argPacketLapData) {
-
-		short pos = 1;
-		if (F1DataHelper.getMyVehicleIdx() > -1) {
-			pos = argPacketLapData.getLapDataList().get(F1DataHelper.getMyVehicleIdx()).getCarPosition();
-		}
-		F1DataHelper.setFrontVehicleIdx(F1DataHelper.getVehicleIdxDriverInFront(pos, argPacketLapData));
-		F1DataHelper.setBehindVehicleIdx(F1DataHelper.getVehicleIdxDriverBehind(pos, argPacketLapData));
-
-		F1DataHelper.updateWarnings(F1DataHelper.getFrontVehicleIdx(), 0);
-		F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
-		F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
-
-		F1DataHelper.createDriverLapPosition(argPacketLapData);
-
-		F1Frame.drawTrackPosition(argPacketLapData);
-		
-		
-		F1DataHelper.checkPitstop(argPacketLapData);
-
-		log.debug(argPacketLapData);
-	}
-
-	private static void handleEventData(PacketEventData argPacketEventData) {
-		if ("SSTA".equals(argPacketEventData.getEventStringCodeAsString())) {
-			F1DataHelper.setVehicleTrackWarnings(
-					new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-			F1DataHelper.setVehicleCurrentTyre(
-					new short[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-			F1DataHelper.updateWarnings((short) 0, 0);
-			F1DataHelper.updateWarnings((short) 0, 1);
-			F1DataHelper.updateWarnings((short) 0, 2);
-			F1DataHelper.resetDriverLapPosition();
-			F1DataHelper.resetDriverDistance();
-			F1DataHelper.resetPitStops();
-		}
-		if ("SEND".equals(argPacketEventData.getEventStringCodeAsString())) {
-			F1DataHelper.setUseSelf(true);
-			F1Frame.setChangeSelfEnabled(false);
-			log.info("{}: {}m", TrackConstants.TRACK.get(F1DataHelper.getTrackId()), F1DataHelper.getTrackLength());
-
-			F1DataHelper.printLeadingLaps();
-			F1DataHelper.printTotalDrivenDistance();
-			F1DataHelper.printFrontWingChanges();
-		}
-		if ("PENA".equals(argPacketEventData.getEventStringCodeAsString())) {
-			String name = F1DataHelper.getNameForIdx(argPacketEventData.getEventDataDetails().getVehicleIdx());
-			String nameOther = F1DataHelper
-					.getNameForIdx(argPacketEventData.getEventDataDetails().getOtherVehicleIdx());
-			log.debug("{} {} {}", name, nameOther, argPacketEventData);
-			log_penalty.info("{} {} {}", name, nameOther, argPacketEventData);
-
-			if (5 == argPacketEventData.getEventDataDetails().getPenaltyType()
-					&& (27 == argPacketEventData.getEventDataDetails().getInfringementType()
-							|| 7 == argPacketEventData.getEventDataDetails().getInfringementType())) {
-
-				short idx = argPacketEventData.getEventDataDetails().getVehicleIdx();
-				F1DataHelper.increaseWarningByVehicleIdx(idx);
-
-				if (F1DataHelper.getVehicleTrackWarnings()[idx] == 3) {
-					F1DataHelper.resetWarningByVehicleIdx(idx);
-				}
-
-				F1DataHelper.updateWarnings(F1DataHelper.getFrontVehicleIdx(), 0);
-				F1DataHelper.updateWarnings(F1DataHelper.getMyVehicleIdx(), 1);
-				F1DataHelper.updateWarnings(F1DataHelper.getBehindVehicleIdx(), 2);
-			}
-		}
-		log.debug(argPacketEventData);
-	}
-
-	private static void handleParticipants(PacketParticipants argPacketParticipants) {
-
-		if (F1DataHelper.isUseSelf()) {
-			F1DataHelper.setMyVehicleIdx(argPacketParticipants.getPacketHeader().getPlayerCarIndex());
-		}
-		F1DataHelper.setParticipants(argPacketParticipants);
-		F1Frame.setChangeSelfEnabled(true);
-
-		log.debug(argPacketParticipants);
-	}
-
-	private static void handleCarStatus(PacketCarStatus argCarStatus) {
-
-		int i = 0;
-		short[] vehicleCurrentTyre = F1DataHelper.getVehicleCurrentTyre();
-		boolean update = false;
-		for (CarStatusData carStatusData : argCarStatus.getCarStatusDataList()) {
-			if (vehicleCurrentTyre[i] != carStatusData.getVisualTyreCompound()) {
-				vehicleCurrentTyre[i] = carStatusData.getVisualTyreCompound();
-				update = true;
-			}
-			i++;
-		}
-
-		if (update) {
-			F1DataHelper.setVehicleCurrentTyre(vehicleCurrentTyre);
-			F1DataHelper.updateCurrentTyre();
-		}
-
-		F1DataHelper.updateERSStatus(argCarStatus);
-
-		log.debug(argCarStatus);
-	}
-
-	private static void handleFinalClassification(PacketFinalClassification argPacketFinalClassification) {
-
-		log.debug(argPacketFinalClassification);
-	}
-
-	private static void handleLobbyInfo(PacketLobbyInfo argPacketLobbyInfo) {
-		log.debug(argPacketLobbyInfo);
-	}
-
-	private static void handleCarDamage(PacketCarDamage argCarDamage) {
-
-		F1DataHelper.updateTyreWear(argCarDamage);
-		F1DataHelper.updateWarnings();
-
-		log.debug(argCarDamage);
-	}
-
 	public void close() {
-		socket.close();
+		listenSocket.close();
 	}
 
 	public void reRunFile(String argFileName) {
@@ -317,5 +306,10 @@ public class F1UdpListener extends Thread {
 			LogManager.shutdown();
 		}
 		F1DataHelper.readSingleSerFile(argFileName);
+	}
+
+	public short getGameVersion(ByteBuffer argBb) {
+		short gameVersion = argBb.getShort();
+		return gameVersion;
 	}
 }

@@ -21,7 +21,11 @@ public class LapData implements Serializable {
 	private int lastLapTimeInMS;
 	private int currentLapTimeInMS;
 	private short sector1TimeInMS;
+	private short sector1TimeInMinutes;
 	private short sector2TimeInMS;
+	private short sector2TimeInMinutes;
+	private short deltaToCarInFrontInMS;
+	private short deltaToRaceLeaderInMS;
 	private float lapDistance;
 	private float totalDistance;
 	private float safetyCarDelta;
@@ -33,6 +37,8 @@ public class LapData implements Serializable {
 	private short currentLapInvalid;
 	private short penalties;
 	private short warnings;
+	private short totalWarnings;
+	private short cornerCuttingWarnings;
 	private short numUnservedDriveThroughPens;
 	private short numUnservedStopGoPens;
 	private short gridPosition;
@@ -43,7 +49,7 @@ public class LapData implements Serializable {
 	private short pitStopTimerInMS;
 	private short pitStopShouldServePen;
 
-	public LapData(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		lastLapTimeInMS = argBb.getInt();
 		currentLapTimeInMS = argBb.getInt();
 		sector1TimeInMS = argBb.getShort();
@@ -69,6 +75,38 @@ public class LapData implements Serializable {
 		pitStopTimerInMS = argBb.getShort();
 		pitStopShouldServePen = argBb.get();
 	}
+	
+	public void initV23(ByteBuffer argBb) {
+		lastLapTimeInMS = argBb.getInt();
+		currentLapTimeInMS = argBb.getInt();
+		sector1TimeInMS = argBb.getShort();
+		sector1TimeInMinutes = argBb.get();
+		sector2TimeInMS = argBb.getShort();
+		sector2TimeInMinutes = argBb.get();
+		deltaToCarInFrontInMS = argBb.getShort();
+		deltaToRaceLeaderInMS = argBb.getShort();
+		lapDistance = argBb.getFloat();
+		totalDistance = argBb.getFloat();
+		safetyCarDelta = argBb.getFloat();
+		carPosition = argBb.get();
+		currentLapNum = argBb.get();
+		pitStatus = argBb.get();
+		numPitStops = argBb.get();
+		sector = argBb.get();
+		currentLapInvalid = argBb.get();
+		penalties = argBb.get();
+		totalWarnings = argBb.get();
+		cornerCuttingWarnings = argBb.get();
+		numUnservedDriveThroughPens = argBb.get();
+		numUnservedStopGoPens = argBb.get();
+		gridPosition = argBb.get();
+		driverStatus = argBb.get();
+		resultStatus = argBb.get();
+		pitLaneTimerActive = argBb.get();
+		pitLaneTimeInLaneInMS = argBb.getShort();
+		pitStopTimerInMS = argBb.getShort();
+		pitStopShouldServePen = argBb.get();
+	}
 
 	public int getLastLapTimeInMS() {
 		return lastLapTimeInMS;
@@ -81,11 +119,27 @@ public class LapData implements Serializable {
 	public short getSector1TimeInMS() {
 		return sector1TimeInMS;
 	}
+	
+	public short getSector1TimeInMinutes() {
+		return sector1TimeInMinutes;
+	}
 
 	public short getSector2TimeInMS() {
 		return sector2TimeInMS;
 	}
+	
+	public short getSector2TimeInMinutes() {
+		return sector2TimeInMinutes;
+	}
 
+	public short getDeltaToCarInFrontInMS() {
+		return deltaToCarInFrontInMS;
+	}
+	
+	public short getDeltaToRaceLeaderInMS() {
+		return deltaToRaceLeaderInMS;
+	}
+	
 	public float getLapDistance() {
 		return lapDistance;
 	}
@@ -128,6 +182,14 @@ public class LapData implements Serializable {
 
 	public short getWarnings() {
 		return warnings;
+	}
+	
+	public short getTotalWarnings() {
+		return totalWarnings;
+	}
+	
+	public short getCornerCuttingWarnings() {
+		return cornerCuttingWarnings;
 	}
 
 	public short getNumUnservedDriveThroughPens() {
@@ -200,6 +262,10 @@ public class LapData implements Serializable {
 		sb.append(getPenalties());
 		sb.append("::");
 		sb.append(getWarnings());
+		sb.append("::");
+		sb.append(getTotalWarnings());
+		sb.append("::");
+		sb.append(getCornerCuttingWarnings());
 		sb.append("::");
 		sb.append(getNumUnservedDriveThroughPens());
 		sb.append("::");

@@ -27,7 +27,7 @@ public class FinalClassificationData  implements Serializable {
 	private short[] tyreStintsVisual = new short[8];
 	private short[] tyreStintsEndLaps = new short[8];
 
-	public FinalClassificationData(ByteBuffer argBb) {
+	public void initV22(ByteBuffer argBb) {
 		position = argBb.get();
 		numLaps = argBb.get();
 		gridPosition = argBb.get();
